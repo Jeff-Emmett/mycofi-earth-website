@@ -4,7 +4,7 @@ import Image from "next/image"
 export function ContentSection() {
   return (
     <section className="py-20 bg-muted/30 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
+      <div className="absolute inset-0 opacity-[0.08] pointer-events-none">
         <Image src="/images/mycelial-network-blue.png" alt="" fill className="object-cover" />
       </div>
 

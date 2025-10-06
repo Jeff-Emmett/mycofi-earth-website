@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { Sprout } from "lucide-react"
 
 export function Footer() {
   return (
@@ -8,6 +9,10 @@ export function Footer() {
           <div className="md:col-span-2">
             <div className="text-2xl font-bold mb-3 text-primary" style={{ fontFamily: "var(--font-crimson)" }}>
               MycoFi
+            </div>
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-muted px-4 py-2 text-sm text-muted-foreground">
+              <Sprout className="h-4 w-4 text-secondary" />
+              <span>Regenerative Economics for a Living Future</span>
             </div>
             <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
               Exploring regenerative economic systems inspired by mycelial networks and nature's resource allocation
