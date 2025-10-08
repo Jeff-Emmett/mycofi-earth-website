@@ -16,6 +16,8 @@ interface HyphalNode {
   connections: HyphalNode[]
   opacity: number
   isPersistent: boolean
+  createdAt: number
+  connectionDensity: number
 }
 
 export function HyphalCanvas() {
@@ -23,6 +25,17 @@ export function HyphalCanvas() {
   const nodesRef = useRef<HyphalNode[]>([])
   const mouseRef = useRef({ x: 0, y: 0, isMoving: false })
   const animationRef = useRef<number>()
+
+  const getDensityColor = (density: number, opacity: number): string => {
+    // Map density (0-10+) to hue (0-300 degrees)
+    // Low density = red/orange (0-60), high density = blue/violet (240-300)
+    const normalizedDensity = Math.min(density / 10, 1)
+    const hue = normalizedDensity * 300
+    // Muted colors: lower saturation (40-50%) and medium lightness (50-60%)
+    const saturation = 40 + normalizedDensity * 10
+    const lightness = 50 + normalizedDensity * 10
+    return `hsla(${hue}, ${saturation}%, ${lightness}%, ${opacity})`
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -65,6 +78,8 @@ export function HyphalCanvas() {
         connections: [],
         opacity: 1,
         isPersistent: false,
+        createdAt: Date.now(),
+        connectionDensity: 0,
       }
     }
 
@@ -81,10 +96,8 @@ export function HyphalCanvas() {
     const createMeshConnections = () => {
       nodesRef.current.forEach((node, i) => {
         const maturityFactor = node.age / node.maxAge
-        // Reduced max connections from 6/3 to 4/2
         const maxConnections = node.isPersistent ? 7 : maturityFactor > 0.6 ? 4 : 2
         const connectionDistance = maturityFactor > 0.6 ? 80 : 50
-        // Increased probability threshold to reduce connections
         const connectionProbability = maturityFactor > 0.6 ? 0.97 : 0.99
 
         if (node.age < 20 || node.connections.length >= maxConnections) return
@@ -119,12 +132,18 @@ export function HyphalCanvas() {
       x2: number,
       y2: number,
       opacity: number,
+      color: string,
+      fragmentationFactor: number,
     ) => {
       const dx = x2 - x1
       const dy = y2 - y1
       const distance = Math.sqrt(dx * dx + dy * dy)
 
-      // For short distances, draw straight line
+      if (fragmentationFactor > 0.5 && Math.random() > fragmentationFactor) {
+        // Skip drawing some connections to create fragmentation effect
+        return
+      }
+
       if (distance < 30) {
         ctx.beginPath()
         ctx.moveTo(x1, y1)
@@ -133,7 +152,6 @@ export function HyphalCanvas() {
         return
       }
 
-      // Create branching path with 1-2 intermediate points
       const numBranches = distance > 60 ? 2 : 1
       const points = [{ x: x1, y: y1 }]
 
@@ -141,7 +159,6 @@ export function HyphalCanvas() {
         const t = (i + 1) / (numBranches + 1)
         const midX = x1 + dx * t
         const midY = y1 + dy * t
-        // Add perpendicular offset for organic branching
         const perpX = -dy / distance
         const perpY = dx / distance
         const offset = (Math.random() - 0.5) * distance * 0.3
@@ -153,7 +170,6 @@ export function HyphalCanvas() {
 
       points.push({ x: x2, y: y2 })
 
-      // Draw smooth curve through points
       ctx.beginPath()
       ctx.moveTo(points[0].x, points[0].y)
 
@@ -170,6 +186,8 @@ export function HyphalCanvas() {
     const animate = () => {
       ctx.fillStyle = "rgba(250, 248, 245, 0.08)"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      const currentTime = Date.now()
 
       if (mouseRef.current.isMoving && Math.random() > 0.65) {
         const burstCount = Math.floor(Math.random() * 2) + 1
@@ -196,8 +214,16 @@ export function HyphalCanvas() {
         createMeshConnections()
       }
 
+      nodesRef.current.forEach((node) => {
+        node.connectionDensity = node.connections.length
+      })
+
       nodesRef.current = nodesRef.current.filter((node) => {
         node.age++
+
+        const timeSinceCreation = currentTime - node.createdAt
+        const fadeOutDuration = 30000 // 30 seconds
+        const fadeOutFactor = Math.min(timeSinceCreation / fadeOutDuration, 1)
 
         if (!node.isPersistent) {
           node.angle += node.angleChangeRate
@@ -221,14 +247,18 @@ export function HyphalCanvas() {
 
         const ageFactor = node.age / node.maxAge
         if (node.isPersistent) {
-          node.opacity = 0.15
+          node.opacity = Math.max(0, 0.15 * (1 - fadeOutFactor))
         } else if (ageFactor >= 1) {
           node.isPersistent = true
-          node.opacity = 0.15
+          node.opacity = 0.15 * (1 - fadeOutFactor)
           node.vx = 0
           node.vy = 0
         } else {
-          node.opacity = Math.max(0.15, 1 - ageFactor * 0.85)
+          node.opacity = Math.max(0, (1 - ageFactor * 0.85) * (1 - fadeOutFactor * 0.5))
+        }
+
+        if (fadeOutFactor >= 1) {
+          return false
         }
 
         if (
@@ -244,12 +274,14 @@ export function HyphalCanvas() {
         }
 
         if (node.parent) {
-          const gradient = ctx.createLinearGradient(node.parent.x, node.parent.y, node.x, node.y)
+          const avgDensity = (node.connectionDensity + node.parent.connectionDensity) / 2
           const parentOpacity = node.parent.opacity * 0.5
           const nodeOpacity = node.opacity * 0.5
-          gradient.addColorStop(0, `rgba(120, 120, 120, ${parentOpacity})`)
-          gradient.addColorStop(0.5, `rgba(120, 120, 120, ${(parentOpacity + nodeOpacity) / 2})`)
-          gradient.addColorStop(1, `rgba(120, 120, 120, ${nodeOpacity})`)
+
+          const gradient = ctx.createLinearGradient(node.parent.x, node.parent.y, node.x, node.y)
+          gradient.addColorStop(0, getDensityColor(node.parent.connectionDensity, parentOpacity))
+          gradient.addColorStop(0.5, getDensityColor(avgDensity, (parentOpacity + nodeOpacity) / 2))
+          gradient.addColorStop(1, getDensityColor(node.connectionDensity, nodeOpacity))
 
           ctx.strokeStyle = gradient
           ctx.lineWidth = 2.5 + Math.random() * 1.5
@@ -262,15 +294,31 @@ export function HyphalCanvas() {
 
         node.connections.forEach((connected) => {
           if (nodesRef.current.includes(connected)) {
+            const avgDensity = (node.connectionDensity + connected.connectionDensity) / 2
             const avgOpacity = ((node.opacity + connected.opacity) / 2) * 0.35
-            ctx.strokeStyle = `rgba(120, 120, 120, ${avgOpacity})`
+
+            // Calculate fragmentation based on time
+            const nodeFragmentation = Math.min((currentTime - node.createdAt) / fadeOutDuration, 1)
+            const connectedFragmentation = Math.min((currentTime - connected.createdAt) / fadeOutDuration, 1)
+            const avgFragmentation = (nodeFragmentation + connectedFragmentation) / 2
+
+            ctx.strokeStyle = getDensityColor(avgDensity, avgOpacity)
             ctx.lineWidth = 1.5
             ctx.lineCap = "round"
-            drawBranchingConnection(ctx, node.x, node.y, connected.x, connected.y, avgOpacity)
+            drawBranchingConnection(
+              ctx,
+              node.x,
+              node.y,
+              connected.x,
+              connected.y,
+              avgOpacity,
+              ctx.strokeStyle,
+              avgFragmentation,
+            )
           }
         })
 
-        ctx.fillStyle = `rgba(120, 120, 120, ${node.opacity * 0.7})`
+        ctx.fillStyle = getDensityColor(node.connectionDensity, node.opacity * 0.7)
         ctx.beginPath()
         ctx.arc(node.x, node.y, 2.5, 0, Math.PI * 2)
         ctx.fill()

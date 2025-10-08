@@ -16,7 +16,7 @@ export function BookShowcase() {
             <div className="relative aspect-[3/4] max-w-md mx-auto">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-lg blur-2xl transform scale-105" />
               <Image
-                src="/images/book-cover.png"
+                src="/images/exploring-mycofi-cover.png"
                 alt="Exploring MycoFi: Mycelial Design Patterns for Web3 and Beyond - Book Cover"
                 fill
                 className="object-contain relative z-10 drop-shadow-2xl"

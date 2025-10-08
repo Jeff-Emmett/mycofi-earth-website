@@ -15,33 +15,36 @@ export function HeroSection() {
       </div>
 
       <div className="container">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1
-            className="mb-6 text-5xl md:text-7xl font-bold tracking-tight text-balance"
-            style={{ fontFamily: "var(--font-crimson)" }}
-          >
-            Exploring <span className="text-primary">MycoFi</span>: Mycelial Design Patterns for Web3 & Beyond
-          </h1>
+        <div className="mx-auto max-w-6xl">
+          {/* Text content */}
+          <div className="text-center">
+            <h1
+              className="mb-6 text-4xl md:text-6xl font-bold tracking-tight text-balance"
+              style={{ fontFamily: "var(--font-crimson)" }}
+            >
+              Exploring <span className="text-primary">MycoFi</span>: Mycelial Design Patterns for Web3 & Beyond
+            </h1>
 
-          <p className="mb-8 text-lg md:text-xl text-muted-foreground text-balance leading-relaxed max-w-3xl mx-auto">
-            Exploring economic systems inspired by mycelial networks—where cooperation, redistribution, and mutual aid
-            create resilient, regenerative communities.
-          </p>
+            <p className="mb-8 text-lg md:text-xl text-muted-foreground text-balance leading-relaxed max-w-3xl mx-auto">
+              Exploring economic systems inspired by mycelial networks—where cooperation, redistribution, and mutual aid
+              create resilient, regenerative communities.
+            </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button asChild size="lg" className="text-base">
-              <Link href="https://book.mycofi.earth" target="_blank">
-                Read the Book
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="text-base bg-transparent">
-              <Link
-                href="https://allthingsdecent.substack.com/p/mycoeconomics-and-permaculture-currencies"
-                target="_blank"
-              >
-                Learn More
-              </Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button asChild size="lg" className="text-base">
+                <Link href="https://book.mycofi.earth" target="_blank">
+                  Read the Book
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="text-base bg-transparent">
+                <Link
+                  href="https://allthingsdecent.substack.com/p/mycoeconomics-and-permaculture-currencies"
+                  target="_blank"
+                >
+                  Learn More
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
 

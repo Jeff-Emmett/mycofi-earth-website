@@ -11,7 +11,7 @@ export function CTASection() {
               className="text-4xl md:text-5xl font-bold mb-4 text-balance"
               style={{ fontFamily: "var(--font-crimson)" }}
             >
-              Explore the Myco-Economic Future
+              Welcome to the Myco-Economic Future
             </h2>
             <p className="text-lg text-muted-foreground text-balance">
               Dive deeper into regenerative economics and permaculture currencies

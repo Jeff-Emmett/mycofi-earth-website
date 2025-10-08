@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description:
     "Exploring regenerative economic systems inspired by mycelial networks and nature's resource allocation algorithms",
   generator: "v0.app",
+  icons: {
+    icon: "/mycofi-logo.jpg",
+  },
 }
 
 export default function RootLayout({

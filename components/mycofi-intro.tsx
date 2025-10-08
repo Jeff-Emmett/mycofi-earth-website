@@ -23,7 +23,7 @@ export function MycoFiIntro() {
       </div>
 
       <div className="container relative z-10">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <Card className="border-2 border-primary/20 bg-gradient-to-br from-background via-primary/5 to-secondary/5 shadow-lg">
             <CardContent className="p-8 md:p-12">
               <div className="flex items-start gap-4 mb-6">
@@ -37,20 +37,20 @@ export function MycoFiIntro() {
                   >
                     What is MycoFi?
                   </h2>
-                  <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                    <strong className="text-foreground">MycoFi</strong> (Mycelial Finance) is an exploration of{" "}
-                    <strong className="text-foreground">mycoeconomics</strong>—economic systems inspired by the
-                    intelligence of fungal networks. Just as mycelium redistributes nutrients through underground
-                    connections, MycoFi envisions decentralized financial systems built on cooperation, mutual aid, and
-                    regenerative principles.
-                  </p>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    By emulating nature's evolutionary resource allocation algorithms, we can design Web3 protocols and
-                    economic structures that prioritize collective wellbeing over extractive growth—moving from currency
-                    monocultures to diverse, resilient permaculture currencies.
-                  </p>
                 </div>
               </div>
+              <p className="text-lg text-muted-foreground leading-relaxed mb-4">
+                <strong className="text-foreground">MycoFi</strong> (Mycelial Finance) is an exploration of{" "}
+                <strong className="text-foreground">mycoeconomics</strong>—economic systems inspired by the intelligence
+                of fungal networks. Just as mycelium redistributes nutrients through underground connections, MycoFi
+                envisions decentralized financial systems built on cooperation, mutual aid, and regenerative principles.
+              </p>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                By emulating nature's evolutionary resource allocation algorithms, we can design Web3 protocols and
+                economic structures that prioritize collective wellbeing over extractive growth—moving from currency
+                monocultures to diverse, resilient permaculture currencies.
+              </p>
+              {/* </CHANGE> */}
             </CardContent>
           </Card>
         </div>

@@ -6,11 +6,11 @@
 :root {
   /* Updated to vibrant green color palette inspired by mycelial networks, forest growth, and living ecosystems */
   --background: oklch(0.98 0.01 145);
-  --foreground: oklch(0.15 0.04 155);
+  --foreground: oklch(0.08 0.02 155);
   --card: oklch(0.99 0.005 145);
-  --card-foreground: oklch(0.15 0.04 155);
+  --card-foreground: oklch(0.08 0.02 155);
   --popover: oklch(0.99 0.005 145);
-  --popover-foreground: oklch(0.15 0.04 155);
+  --popover-foreground: oklch(0.08 0.02 155);
   /* Primary: Vibrant emerald green (living mycelium) */
   --primary: oklch(0.55 0.18 155);
   --primary-foreground: oklch(0.99 0.005 145);
@@ -21,7 +21,7 @@
   --muted-foreground: oklch(0.35 0.04 155);
   /* Accent: Bright lime green (new growth) */
   --accent: oklch(0.72 0.2 135);
-  --accent-foreground: oklch(0.15 0.04 155);
+  --accent-foreground: oklch(0.08 0.02 155);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.99 0.005 145);
   --border: oklch(0.85 0.03 145);
@@ -34,11 +34,11 @@
   --chart-5: oklch(0.6 0.14 140);
   --radius: 0.625rem;
   --sidebar: oklch(0.98 0.01 145);
-  --sidebar-foreground: oklch(0.15 0.04 155);
+  --sidebar-foreground: oklch(0.08 0.02 155);
   --sidebar-primary: oklch(0.55 0.18 155);
   --sidebar-primary-foreground: oklch(0.99 0.005 145);
   --sidebar-accent: oklch(0.92 0.02 145);
-  --sidebar-accent-foreground: oklch(0.15 0.04 155);
+  --sidebar-accent-foreground: oklch(0.08 0.02 155);
   --sidebar-border: oklch(0.85 0.03 145);
   --sidebar-ring: oklch(0.55 0.18 155);
 }
