@@ -37,12 +37,7 @@ export function HeroSection() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base bg-transparent">
-                <Link
-                  href="https://allthingsdecent.substack.com/p/mycoeconomics-and-permaculture-currencies"
-                  target="_blank"
-                >
-                  Learn More
-                </Link>
+                <a href="#what-is-mycofi">Learn More</a>
               </Button>
             </div>
           </div>

@@ -18,9 +18,12 @@ export function ImageGallery() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="leading-relaxed">
-                Just as mycelium breaks down dead matter to create fertile soil, we can transform dying economic structures into nourishment for new regenerative systems. Composting capitalism invokes the cycles of decay and renewal inherent in natural ecosystems, recognizing that institutional senescence and the end of extractive systems creates the conditions for regenerative abundance.
+                Just as mycelium breaks down dead matter to create fertile soil, we can transform dying economic
+                structures into nourishment for new regenerative systems. Composting capitalism invokes the cycles of
+                decay and renewal inherent in natural ecosystems, recognizing that institutional senescence and the end
+                of extractive systems creates the conditions for regenerative abundance.
               </p>
-              
+
               <div className="pt-4">
                 <Button asChild variant="secondary" className="w-full">
                   <a
@@ -43,13 +46,16 @@ export function ImageGallery() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="leading-relaxed">
-                Psilocybernetics explores how mycelial wisdom and cybernetic systems thinking converge to create new models of collective coordination. Like mycelial networks that process distributed information, we can design systems that enhance collective intelligence and distributed decision-making with new forms of economy, democracy, and technology.          
+                Psilocybernetics explores how mycelial wisdom and cybernetic systems thinking converge to create new
+                models of collective coordination. Like mycelial networks that process distributed information, we can
+                design systems that enhance collective intelligence and distributed decision-making with new forms of
+                economy, democracy, and technology.
               </p>
-              
+
               <div className="pt-4">
                 <Button asChild variant="secondary" className="w-full">
                   <a
-                    href="https://jeffemmett.com/presentations#psilocybernetics"
+                    href="https://psilo-cyber.net/ics"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2"

@@ -3,7 +3,7 @@ import { Sparkles } from "lucide-react"
 
 export function MycoFiIntro() {
   return (
-    <section className="py-16 bg-background relative overflow-hidden">
+    <section id="what-is-mycofi" className="py-16 bg-background relative overflow-hidden">
       {/* Hyphal thread pattern background */}
       <div className="absolute inset-0 opacity-5 pointer-events-none">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -50,7 +50,6 @@ export function MycoFiIntro() {
                 economic structures that prioritize collective wellbeing over extractive growth—moving from currency
                 monocultures to diverse, resilient permaculture currencies.
               </p>
-              {/* </CHANGE> */}
             </CardContent>
           </Card>
         </div>
