@@ -3,7 +3,7 @@ import { Sprout } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-white">
+    <footer className="border-t border-border bg-white relative z-20">
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">

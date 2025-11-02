@@ -21,7 +21,7 @@ export default function Home() {
         <ImageGallery />
         <CTASection />
       </main>
-      <Footer />
+      <Footer className="z-20" />
     </div>
   )
 }
