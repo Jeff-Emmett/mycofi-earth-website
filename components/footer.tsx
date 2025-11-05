@@ -4,7 +4,7 @@ import { Sprout } from "lucide-react"
 export function Footer() {
   return (
     <footer className="border-t border-border bg-white relative z-20">
-      <div className="container py-12">
+      <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <div
@@ -66,6 +66,15 @@ export function Footer() {
                   className="text-black !opacity-100 hover:text-primary transition-colors"
                 >
                   All Links
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://mycopunks.gitbook.io/mycopunk-principles"
+                  target="_blank"
+                  className="text-black !opacity-100 hover:text-primary transition-colors"
+                >
+                  Mycopunk Principles
                 </Link>
               </li>
             </ul>
