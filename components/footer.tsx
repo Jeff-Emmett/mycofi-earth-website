@@ -53,21 +53,6 @@ export function Footer() {
                   Shop
                 </Link>
               </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-3 text-black !opacity-100">Connect</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link
-                  href="https://links.mycofi.earth"
-                  target="_blank"
-                  className="text-black !opacity-100 hover:text-primary transition-colors"
-                >
-                  All Links
-                </Link>
-              </li>
               <li>
                 <Link
                   href="https://mycopunks.gitbook.io/mycopunk-principles"
@@ -75,6 +60,26 @@ export function Footer() {
                   className="text-black !opacity-100 hover:text-primary transition-colors"
                 >
                   Mycopunk Principles
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-3 text-black !opacity-100">Connect</h3>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/contact" className="text-black !opacity-100 hover:text-primary transition-colors">
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://links.mycofi.earth"
+                  target="_blank"
+                  className="text-black !opacity-100 hover:text-primary transition-colors"
+                >
+                  All Links
                 </Link>
               </li>
             </ul>
