@@ -1,0 +1,20 @@
+# Cloudflare Tunnel Configuration for MycoFi Earth Website
+# This configuration routes traffic from mycofi.earth to the Docker container on Netcup RS 8000
+
+tunnel: mycofi-earth-tunnel
+credentials-file: /root/.cloudflared/mycofi-earth-tunnel.json
+
+ingress:
+  # Route mycofi.earth to the local Docker container
+  - hostname: mycofi.earth
+    service: http://localhost:3003
+
+  # Route www.mycofi.earth to the same container
+  - hostname: www.mycofi.earth
+    service: http://localhost:3003
+
+  # Catch-all rule (required by cloudflared)
+  - service: http_status:404
+
+# Optional: Enable metrics for monitoring
+metrics: 0.0.0.0:3004

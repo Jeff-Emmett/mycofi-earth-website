@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mycofi-earth-website:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mycofi-earth-website:latest
+    container_name: mycofi-earth-website
+    restart: unless-stopped
+    ports:
+      - "3003:3000"  # Expose on port 3003 to avoid conflicts with other services
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    networks:
+      - mycofi-network
+    labels:
+      - "com.docker.compose.project=mycofi-earth"
+      - "description=MycoFi Earth Website - Next.js Application"
+
+networks:
+  mycofi-network:
+    driver: bridge
