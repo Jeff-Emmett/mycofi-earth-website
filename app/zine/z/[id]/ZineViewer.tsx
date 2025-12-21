@@ -56,7 +56,7 @@ export default function ZineViewer({ zine }: ZineViewerProps) {
             className="text-gray-600 hover:text-black punk-text text-sm flex items-center gap-1"
           >
             <ArrowLeft className="w-4 h-4" />
-            MycoZine
+            MycroZine
           </Link>
           <div className="flex gap-2">
             <button
@@ -169,7 +169,7 @@ export default function ZineViewer({ zine }: ZineViewerProps) {
           <p>
             Created with{" "}
             <Link href="/zine" className="underline hover:text-gray-600">
-              MycoZine
+              MycroZine
             </Link>
             {" by "}
             <Link href="/" className="underline hover:text-gray-600">

@@ -264,7 +264,7 @@ async function createStyledPlaceholder(
 
       <!-- Generation notice -->
       <rect x="150" y="1050" width="525" height="100" fill="${s.accent}" opacity="0.1" rx="10"/>
-      <text x="412" y="1090" text-anchor="middle" class="body" font-size="18" fill="${s.fg}">MycoZine - AI Generated</text>
+      <text x="412" y="1090" text-anchor="middle" class="body" font-size="18" fill="${s.fg}">MycroZine - AI Generated</text>
       <text x="412" y="1120" text-anchor="middle" class="body" font-size="14" fill="${s.fg}" opacity="0.7">Styled placeholder - image gen pending</text>
 
       <!-- Corner decorations -->

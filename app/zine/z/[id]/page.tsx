@@ -25,22 +25,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!zine) {
     return {
-      title: "Zine Not Found - MycoZine",
+      title: "Zine Not Found - MycroZine",
     };
   }
 
   return {
-    title: `${zine.topic} - MycoZine`,
-    description: `An 8-page mini-zine about ${zine.topic}. Created with MycoZine by MycoFi.`,
+    title: `${zine.topic} - MycroZine`,
+    description: `An 8-page mini-zine about ${zine.topic}. Created with MycroZine by MycoFi.`,
     openGraph: {
-      title: `${zine.topic} - MycoZine`,
+      title: `${zine.topic} - MycroZine`,
       description: `An 8-page mini-zine about ${zine.topic}`,
       type: "article",
       images: zine.pageUrls?.[0] ? [{ url: zine.pageUrls[0] }] : [],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${zine.topic} - MycoZine`,
+      title: `${zine.topic} - MycroZine`,
       description: `An 8-page mini-zine about ${zine.topic}`,
     },
   };
