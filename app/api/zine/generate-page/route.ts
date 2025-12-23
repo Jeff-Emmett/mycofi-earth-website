@@ -102,20 +102,26 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const runpodApiKey = process.env.RUNPOD_API_KEY;
+  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
+
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  // Try Gemini 2.0 Flash with image generation (Nano Banana)
-  // Uses responseModalities: ["TEXT", "IMAGE"] for native image generation
+  if (!runpodApiKey) {
+    throw new Error("RUNPOD_API_KEY not configured - required for Gemini proxy");
+  }
+
+  // Use RunPod US proxy to bypass geo-restrictions on Gemini image generation
   try {
-    const result = await generateWithGemini2FlashImage(prompt, apiKey);
+    const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
     if (result) {
-      console.log("Generated image with Gemini 2.0 Flash");
+      console.log("✅ Generated image with Gemini 2.0 Flash via RunPod proxy");
       return result;
     }
   } catch (error) {
-    console.error("Gemini 2.0 Flash image generation error:", error);
+    console.error("RunPod Gemini proxy error:", error);
   }
 
   // Fallback: Create styled placeholder with actual content
@@ -123,38 +129,67 @@ async function generateImageWithGemini(
   return createStyledPlaceholder(outline, style);
 }
 
-// Gemini 2.0 Flash with native image generation
-async function generateWithGemini2FlashImage(prompt: string, apiKey: string): Promise<string | null> {
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+// Gemini image generation via RunPod US proxy (bypasses geo-restrictions)
+async function generateWithRunPodGeminiProxy(
+  prompt: string,
+  apiKey: string,
+  runpodApiKey: string,
+  endpointId: string
+): Promise<string | null> {
+  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
 
-  const response = await fetch(geminiUrl, {
+  console.log("Calling Gemini via RunPod proxy...");
+
+  const response = await fetch(runpodUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${runpodApiKey}`,
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: `Generate an image: ${prompt}` }] }],
-      generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
+      input: {
+        api_key: apiKey,
+        model: "gemini-2.0-flash-exp",
+        contents: [
+          {
+            parts: [
+              {
+                text: `Generate an image: ${prompt}`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+        },
+      },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini API error:", response.status, errorText);
+    console.error("RunPod API error:", response.status, errorText);
     return null;
   }
 
-  const data = await response.json();
+  const result = await response.json();
+  const data = result.output || result;
+
   if (data.error) {
-    console.error("Gemini API error:", data.error);
+    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
     return null;
   }
 
+  // Extract image from response
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
+      console.log("✅ Successfully received image from Gemini via RunPod");
       return part.inlineData.data;
     }
   }
 
+  console.error("No image in Gemini response");
   return null;
 }
 
