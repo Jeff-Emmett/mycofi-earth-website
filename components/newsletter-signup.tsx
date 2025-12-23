@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sprout } from "lucide-react"
 
-const LISTMONK_URL = "https://newsletter.jeffemmett.com"
-const LIST_UUID = "d076325f-f39a-44a2-874d-2026c7eb6d1c" // MycoFi list
+const NEWSLETTER_API = "https://newsletter.jeffemmett.com/api/subscribe"
+const LIST_UUID = "47c050ec-78b4-4f1b-b1d4-708664479685" // MycoFi list
 
 export function NewsletterSignup() {
   const [email, setEmail] = useState("")
@@ -21,21 +21,20 @@ export function NewsletterSignup() {
     setStatus("loading")
 
     try {
-      const response = await fetch(`${LISTMONK_URL}/api/public/subscription`, {
+      const response = await fetch(`${NEWSLETTER_API}/subscribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email,
-          list_uuids: [LIST_UUID],
-          name: "",
+          list_uuid: LIST_UUID,
         }),
       })
 
       if (response.ok) {
         setStatus("success")
-        setMessage("Merge in to the mesh.")
+        setMessage("Merge in to the mesh. The mycelium remembers.")
         setEmail("")
       } else {
         throw new Error("Subscription failed")
