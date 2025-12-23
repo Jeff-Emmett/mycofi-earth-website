@@ -1,9 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mic, MicOff, Sparkles, BookOpen, Printer, ArrowLeft } from "lucide-react";
+
+// Helper to get correct path based on subdomain
+function useZinePath() {
+  const [isSubdomain, setIsSubdomain] = useState(false);
+
+  useEffect(() => {
+    setIsSubdomain(window.location.hostname.startsWith("zine."));
+  }, []);
+
+  return (path: string) => {
+    if (isSubdomain) {
+      // On subdomain, /zine/create becomes /create
+      return path.replace(/^\/zine/, "") || "/";
+    }
+    return path;
+  };
+}
 
 const STYLES = [
   { value: "punk-zine", label: "Punk Zine", description: "Xerox texture, high contrast, DIY collage" },
@@ -23,6 +40,7 @@ const TONES = [
 
 export default function ZinePage() {
   const router = useRouter();
+  const getPath = useZinePath();
   const [topic, setTopic] = useState("");
   const [style, setStyle] = useState("mycelial");
   const [tone, setTone] = useState("regenerative");
@@ -65,7 +83,7 @@ export default function ZinePage() {
 
     // Store the input in sessionStorage and navigate to create page
     sessionStorage.setItem("zineInput", JSON.stringify({ topic, style, tone }));
-    router.push("/zine/create");
+    router.push(getPath("/zine/create"));
   };
 
   return (

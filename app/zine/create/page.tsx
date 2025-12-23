@@ -16,6 +16,22 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+// Helper to get correct path based on subdomain
+function useZinePath() {
+  const [isSubdomain, setIsSubdomain] = useState(false);
+
+  useEffect(() => {
+    setIsSubdomain(window.location.hostname.startsWith("zine."));
+  }, []);
+
+  return (path: string) => {
+    if (isSubdomain) {
+      return path.replace(/^\/zine/, "") || "/";
+    }
+    return path;
+  };
+}
+
 interface PageOutline {
   pageNumber: number;
   type: string;
@@ -46,6 +62,7 @@ const STEP_LABELS = {
 
 export default function CreatePage() {
   const router = useRouter();
+  const getPath = useZinePath();
   const [state, setState] = useState<ZineState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +75,7 @@ export default function CreatePage() {
   useEffect(() => {
     const input = sessionStorage.getItem("zineInput");
     if (!input) {
-      router.push("/zine");
+      router.push(getPath("/zine"));
       return;
     }
 
@@ -255,7 +272,7 @@ export default function CreatePage() {
 
   const copyShareLink = async () => {
     if (!state) return;
-    const shareUrl = `${window.location.origin}/zine/z/${state.id}`;
+    const shareUrl = `${window.location.origin}${getPath(`/zine/z/${state.id}`)}`;
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -279,7 +296,7 @@ export default function CreatePage() {
           <h2 className="text-2xl font-bold punk-text mb-4">Error</h2>
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={() => router.push("/zine")}
+            onClick={() => router.push(getPath("/zine"))}
             className="px-6 py-2 bg-black text-white punk-text hover:bg-green-600"
           >
             Try Again
@@ -297,7 +314,7 @@ export default function CreatePage() {
       <div className="max-w-4xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-4">
           <button
-            onClick={() => router.push("/zine")}
+            onClick={() => router.push(getPath("/zine"))}
             className="flex items-center gap-2 text-gray-600 hover:text-black"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -666,7 +683,7 @@ export default function CreatePage() {
               <button
                 onClick={() => {
                   sessionStorage.removeItem("zineInput");
-                  router.push("/zine");
+                  router.push(getPath("/zine"));
                 }}
                 className="text-gray-600 hover:text-black punk-text underline"
               >
