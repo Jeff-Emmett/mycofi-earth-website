@@ -70,6 +70,7 @@ export default function CreatePage() {
   const [feedback, setFeedback] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [regenerateMode, setRegenerateMode] = useState<"refine" | "revise" | "regenerate">("revise");
 
   // Initialize from session storage
   useEffect(() => {
@@ -184,6 +185,7 @@ export default function CreatePage() {
           feedback: feedback.trim(),
           style: state.style,
           tone: state.tone,
+          mode: regenerateMode,
         }),
       });
 
@@ -580,14 +582,64 @@ export default function CreatePage() {
                       {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                     </button>
                   </div>
+
+                  {/* Mode Selection */}
+                  <div className="mt-3 mb-3">
+                    <label className="block text-xs font-bold punk-text mb-2 text-gray-600">
+                      Regeneration Mode
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRegenerateMode("refine")}
+                        disabled={state.generatingPage !== null}
+                        className={`py-2 px-3 text-xs punk-text border-2 transition-colors
+                          ${regenerateMode === "refine"
+                            ? "bg-green-600 text-white border-green-600"
+                            : "bg-white text-black border-black hover:bg-gray-100"
+                          } disabled:opacity-50`}
+                      >
+                        Refine
+                        <span className="block text-[10px] opacity-75">Keep image</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegenerateMode("revise")}
+                        disabled={state.generatingPage !== null}
+                        className={`py-2 px-3 text-xs punk-text border-2 transition-colors
+                          ${regenerateMode === "revise"
+                            ? "bg-green-600 text-white border-green-600"
+                            : "bg-white text-black border-black hover:bg-gray-100"
+                          } disabled:opacity-50`}
+                      >
+                        Revise
+                        <span className="block text-[10px] opacity-75">Same vibe</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegenerateMode("regenerate")}
+                        disabled={state.generatingPage !== null}
+                        className={`py-2 px-3 text-xs punk-text border-2 transition-colors
+                          ${regenerateMode === "regenerate"
+                            ? "bg-green-600 text-white border-green-600"
+                            : "bg-white text-black border-black hover:bg-gray-100"
+                          } disabled:opacity-50`}
+                      >
+                        New
+                        <span className="block text-[10px] opacity-75">Start fresh</span>
+                      </button>
+                    </div>
+                  </div>
+
                   <button
                     onClick={regeneratePage}
                     disabled={!feedback.trim() || state.generatingPage !== null}
-                    className="mt-3 w-full py-2 bg-black text-white punk-text flex items-center justify-center gap-2
+                    className="w-full py-2 bg-black text-white punk-text flex items-center justify-center gap-2
                               hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-4 h-4 ${state.generatingPage ? "animate-spin" : ""}`} />
-                    Regenerate Page
+                    {regenerateMode === "refine" ? "Refine Page" :
+                     regenerateMode === "revise" ? "Revise Page" : "Regenerate Page"}
                   </button>
                 </div>
               </div>
