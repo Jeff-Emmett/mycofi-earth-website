@@ -109,24 +109,77 @@ async function generateImageWithGemini(
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  if (!runpodApiKey) {
-    throw new Error("RUNPOD_API_KEY not configured - required for Gemini proxy");
-  }
-
-  // Use RunPod US proxy to bypass geo-restrictions on Gemini image generation
+  // Try Imagen 3 first (best quality, may work directly)
   try {
-    const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
+    const result = await generateWithImagen3(prompt, apiKey);
     if (result) {
-      console.log("✅ Generated image with Gemini 2.0 Flash via RunPod proxy");
+      console.log("✅ Generated image with Imagen 3");
       return result;
     }
   } catch (error) {
-    console.error("RunPod Gemini proxy error:", error);
+    console.error("Imagen 3 error:", error);
   }
 
-  // Fallback: Create styled placeholder with actual content
+  // Fallback to Gemini via RunPod proxy
+  if (runpodApiKey) {
+    try {
+      const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
+      if (result) {
+        console.log("✅ Generated image with Gemini via RunPod proxy");
+        return result;
+      }
+    } catch (error) {
+      console.error("RunPod Gemini proxy error:", error);
+    }
+  }
+
+  // Final fallback: Create styled placeholder
   console.log("Using styled placeholder image for page", outline.pageNumber);
   return createStyledPlaceholder(outline, style);
+}
+
+// Imagen 3 - Google's best image generation model
+async function generateWithImagen3(prompt: string, apiKey: string): Promise<string | null> {
+  const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+  console.log("Calling Imagen 3 API...");
+
+  const response = await fetch(imagenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      instances: [{ prompt: prompt }],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio: "3:4", // Portrait for zine pages
+        safetyFilterLevel: "BLOCK_ONLY_HIGH",
+        personGeneration: "ALLOW_ALL",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Imagen 3 API error:", response.status, errorText);
+    return null;
+  }
+
+  const data = await response.json();
+
+  if (data.error) {
+    console.error("Imagen 3 error:", JSON.stringify(data.error));
+    return null;
+  }
+
+  // Extract image from predictions
+  const predictions = data.predictions || [];
+  if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
+    console.log("✅ Successfully received image from Imagen 3");
+    return predictions[0].bytesBase64Encoded;
+  }
+
+  console.error("No image in Imagen 3 response");
+  return null;
 }
 
 // Gemini image generation via RunPod US proxy (bypasses geo-restrictions)
