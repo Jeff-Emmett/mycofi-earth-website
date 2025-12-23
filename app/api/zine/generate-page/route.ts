@@ -102,35 +102,20 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const runpodApiKey = process.env.RUNPOD_API_KEY;
-  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  // Try Imagen 3 first (best quality, may work directly)
+  // Try Gemini 2.5 Flash Image (Nano Banana) - the correct image generation model
   try {
-    const result = await generateWithImagen3(prompt, apiKey);
+    const result = await generateWithGeminiNanoBanana(prompt, apiKey);
     if (result) {
-      console.log("✅ Generated image with Imagen 3");
+      console.log("✅ Generated image with Gemini 2.5 Flash Image (Nano Banana)");
       return result;
     }
   } catch (error) {
-    console.error("Imagen 3 error:", error);
-  }
-
-  // Fallback to Gemini via RunPod proxy
-  if (runpodApiKey) {
-    try {
-      const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
-      if (result) {
-        console.log("✅ Generated image with Gemini via RunPod proxy");
-        return result;
-      }
-    } catch (error) {
-      console.error("RunPod Gemini proxy error:", error);
-    }
+    console.error("Gemini Nano Banana error:", error);
   }
 
   // Final fallback: Create styled placeholder
@@ -138,108 +123,39 @@ async function generateImageWithGemini(
   return createStyledPlaceholder(outline, style);
 }
 
-// Imagen 3 - Google's best image generation model
-async function generateWithImagen3(prompt: string, apiKey: string): Promise<string | null> {
-  const imagenUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+// Gemini 2.5 Flash Image (Nano Banana) - Google's image generation model
+async function generateWithGeminiNanoBanana(prompt: string, apiKey: string): Promise<string | null> {
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`;
 
-  console.log("Calling Imagen 3 API...");
+  console.log("Calling Gemini 2.0 Flash Image Generation API...");
 
-  const response = await fetch(imagenUrl, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      instances: [{ prompt: prompt }],
-      parameters: {
-        sampleCount: 1,
-        aspectRatio: "3:4", // Portrait for zine pages
-        safetyFilterLevel: "BLOCK_ONLY_HIGH",
-        personGeneration: "ALLOW_ALL",
-      },
+      contents: [
+        {
+          parts: [
+            { text: prompt }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE", "TEXT"],
+      }
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Imagen 3 API error:", response.status, errorText);
+    console.error("Gemini Image API error:", response.status, errorText);
     return null;
   }
 
   const data = await response.json();
 
   if (data.error) {
-    console.error("Imagen 3 error:", JSON.stringify(data.error));
-    return null;
-  }
-
-  // Extract image from predictions
-  const predictions = data.predictions || [];
-  if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
-    console.log("✅ Successfully received image from Imagen 3");
-    return predictions[0].bytesBase64Encoded;
-  }
-
-  console.error("No image in Imagen 3 response");
-  return null;
-}
-
-// Gemini image generation via RunPod US proxy (bypasses geo-restrictions)
-// Uses gemini-2.0-flash-exp-image-generation for best quality with text rendering
-async function generateWithRunPodGeminiProxy(
-  prompt: string,
-  apiKey: string,
-  runpodApiKey: string,
-  endpointId: string
-): Promise<string | null> {
-  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
-
-  // Enhanced prompt for better text rendering
-  const enhancedPrompt = `${prompt}
-
-CRITICAL TEXT RENDERING INSTRUCTIONS:
-- Any text in the image must be spelled correctly and legibly
-- Use clean, readable typography appropriate to the style
-- Avoid distorted or warped letters
-- Text should be integrated naturally into the design`;
-
-  console.log("Calling Gemini (gemini-2.0-flash-exp-image-generation) via RunPod proxy...");
-
-  const response = await fetch(runpodUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${runpodApiKey}`,
-    },
-    body: JSON.stringify({
-      input: {
-        api_key: apiKey,
-        model: "gemini-2.0-flash-exp-image-generation",
-        contents: [
-          {
-            parts: [
-              {
-                text: enhancedPrompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
-        },
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("RunPod API error:", response.status, errorText);
-    return null;
-  }
-
-  const result = await response.json();
-  const data = result.output || result;
-
-  if (data.error) {
-    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
+    console.error("Gemini Image error:", JSON.stringify(data.error));
     return null;
   }
 
@@ -247,7 +163,7 @@ CRITICAL TEXT RENDERING INSTRUCTIONS:
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
-      console.log("✅ Successfully received image from Gemini via RunPod");
+      console.log("✅ Successfully received image from Gemini Image API");
       return part.inlineData.data;
     }
   }
