@@ -6,6 +6,7 @@ import { ImageGallery } from "@/components/image-gallery"
 import { ContentSection } from "@/components/content-section"
 import { MycopunkSection } from "@/components/mycopunk-section"
 import { CTASection } from "@/components/cta-section"
+import { NewsletterSignup } from "@/components/newsletter-signup"
 import { Footer } from "@/components/footer"
 import { HyphalCanvas } from "@/components/hyphal-canvas"
 
@@ -22,6 +23,7 @@ export default function Home() {
         <ImageGallery />
         <MycopunkSection />
         <CTASection />
+        <NewsletterSignup />
       </main>
       <Footer className="z-20" />
     </div>

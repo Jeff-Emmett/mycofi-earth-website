@@ -16,13 +16,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
       - name: Mirror to Gitea
         env:
           GITEA_TOKEN: ${{ secrets.GITEA_TOKEN }}
           GITEA_USERNAME: ${{ secrets.GITEA_USERNAME }}
         run: |
+          # Validate secrets are set
+          if [ -z "$GITEA_TOKEN" ] || [ -z "$GITEA_USERNAME" ]; then
+            echo "Error: GITEA_TOKEN or GITEA_USERNAME secrets not set"
+            exit 1
+          fi
+
           REPO_NAME=$(basename $GITHUB_REPOSITORY)
-          git remote add gitea https://$GITEA_USERNAME:$GITEA_TOKEN@gitea.jeffemmett.com/jeffemmett/$REPO_NAME.git || true
+          GITEA_URL="https://${GITEA_USERNAME}:${GITEA_TOKEN}@gitea.jeffemmett.com/jeffemmett/${REPO_NAME}.git"
+
+          # Remove existing remote if present, then add fresh
+          git remote remove gitea 2>/dev/null || true
+          git remote add gitea "$GITEA_URL"
+
+          # Push with verbose output for debugging
+          echo "Pushing all branches to Gitea..."
           git push gitea --all --force
+
+          echo "Pushing tags to Gitea..."
           git push gitea --tags --force
+
+          echo "Mirror complete!"
 
