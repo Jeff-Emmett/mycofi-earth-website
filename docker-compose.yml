@@ -10,6 +10,8 @@ services:
       - NODE_ENV=production
       - HOSTNAME=0.0.0.0
       - PORT=3000
+    volumes:
+      - zine-data:/app/data
     networks:
       - mycofi-network
       - traefik-public
@@ -19,6 +21,10 @@ services:
       - "traefik.http.routers.mycofi.entrypoints=web"
       - "traefik.http.services.mycofi.loadbalancer.server.port=3000"
       - "traefik.docker.network=traefik-public"
+
+volumes:
+  zine-data:
+    driver: local
 
 networks:
   mycofi-network:

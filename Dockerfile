@@ -38,6 +38,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Create data directory for zine storage with proper permissions
+RUN mkdir -p /app/data/zines && chown -R nextjs:nodejs /app/data
+
 USER nextjs
 
 EXPOSE 3000
