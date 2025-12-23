@@ -12,6 +12,7 @@ services:
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - RUNPOD_API_KEY=${RUNPOD_API_KEY}
+      - FAL_KEY=${FAL_KEY}
     volumes:
       - zine-data:/app/data
     networks:
