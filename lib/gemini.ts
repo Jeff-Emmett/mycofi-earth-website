@@ -14,43 +14,52 @@ function getGenAI(): GoogleGenerativeAI {
   return _genAI;
 }
 
-// RunPod Stable Diffusion configuration
+// RunPod Gemini Proxy configuration (US-based to bypass geo-restrictions)
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
-const RUNPOD_SD_ENDPOINT = "tzf1j3sc3zufsy"; // Automatic1111 endpoint
+const RUNPOD_GEMINI_ENDPOINT_ID = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
-interface RunPodResponse {
-  id: string;
-  status: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
-  output?: {
-    images?: string[];
-    image?: string;
-  };
-  error?: string;
-}
+/**
+ * Generate image using Gemini API via RunPod US proxy
+ * This bypasses the geo-restriction on Gemini image generation in Germany
+ */
+async function generateImageWithGeminiProxy(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const runpodApiKey = RUNPOD_API_KEY;
 
-async function generateImageWithRunPod(prompt: string): Promise<string> {
-  if (!RUNPOD_API_KEY) {
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
+  if (!runpodApiKey) {
     throw new Error("RUNPOD_API_KEY environment variable is not set");
   }
 
-  const runUrl = `https://api.runpod.ai/v2/${RUNPOD_SD_ENDPOINT}/runsync`;
+  const runpodUrl = `https://api.runpod.ai/v2/${RUNPOD_GEMINI_ENDPOINT_ID}/runsync`;
 
-  // Call RunPod Automatic1111 endpoint
-  const response = await fetch(runUrl, {
+  console.log("Calling Gemini via RunPod proxy...");
+
+  const response = await fetch(runpodUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${RUNPOD_API_KEY}`,
+      "Authorization": `Bearer ${runpodApiKey}`,
     },
     body: JSON.stringify({
       input: {
-        prompt: prompt,
-        negative_prompt: "blurry, low quality, distorted text, watermark, signature",
-        width: 512,
-        height: 768, // Portrait orientation for zine pages
-        num_inference_steps: 25,
-        guidance_scale: 7.5,
-        sampler_name: "DPM++ 2M Karras",
+        api_key: apiKey,
+        model: "gemini-2.0-flash-exp",
+        contents: [
+          {
+            parts: [
+              {
+                text: `Generate an image: ${prompt}`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+        },
       },
     }),
   });
@@ -61,20 +70,24 @@ async function generateImageWithRunPod(prompt: string): Promise<string> {
     throw new Error(`RunPod API error: ${response.status}`);
   }
 
-  const result: RunPodResponse = await response.json();
+  const result = await response.json();
+  const data = result.output || result;
 
-  if (result.status === "FAILED") {
-    throw new Error(`RunPod job failed: ${result.error || "Unknown error"}`);
+  if (data.error) {
+    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
+    throw new Error(data.error.message || "Gemini API error");
   }
 
-  // Extract base64 image from response
-  const imageData = result.output?.images?.[0] || result.output?.image;
-  if (!imageData) {
-    throw new Error("No image data in RunPod response");
+  // Extract image from response
+  const parts = data.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData?.mimeType?.startsWith("image/")) {
+      console.log("Successfully generated image via RunPod proxy");
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
   }
 
-  // RunPod returns base64 without prefix
-  return `data:image/png;base64,${imageData}`;
+  throw new Error("No image in Gemini response");
 }
 
 export interface PageOutline {
@@ -191,26 +204,31 @@ export async function generatePageImage(
   tone: string,
   feedback?: string
 ): Promise<string> {
-  // Use RunPod Stable Diffusion for image generation
-  // (Gemini image gen is geo-blocked in Germany where the server is located)
+  // Use Gemini image generation via RunPod US proxy (bypasses geo-restriction)
   const styleDesc = STYLE_PROMPTS[style] || STYLE_PROMPTS["mycelial"];
   const toneDesc = TONE_PROMPTS[tone] || TONE_PROMPTS["regenerative"];
 
-  // Build a Stable Diffusion optimized prompt
-  let imagePrompt = `${pageOutline.title}, ${pageOutline.keyPoints.join(", ")}, ${styleDesc}, ${toneDesc}, ${pageOutline.imagePrompt}, zine page design, printable art, high quality illustration`;
+  let imagePrompt = `Create a single page for a mini-zine (approximately 825x1275 pixels aspect ratio, portrait orientation).
+
+Page ${pageOutline.pageNumber}: ${pageOutline.title}
+Type: ${pageOutline.type}
+Key elements: ${pageOutline.keyPoints.join(", ")}
+
+Visual style: ${styleDesc}
+Mood/tone: ${toneDesc}
+
+Specific requirements:
+${pageOutline.imagePrompt}
+
+The image should be a complete, self-contained page that could be printed. Include any text as part of the design in a ${style} typography style.`;
 
   if (feedback) {
-    imagePrompt += `, ${feedback}`;
-  }
-
-  // Truncate prompt if too long (SD has token limits)
-  if (imagePrompt.length > 500) {
-    imagePrompt = imagePrompt.substring(0, 500);
+    imagePrompt += `\n\nUser feedback for refinement: ${feedback}`;
   }
 
   try {
-    console.log(`Generating image for page ${pageOutline.pageNumber} with RunPod...`);
-    const imageDataUrl = await generateImageWithRunPod(imagePrompt);
+    console.log(`Generating image for page ${pageOutline.pageNumber} via Gemini/RunPod proxy...`);
+    const imageDataUrl = await generateImageWithGeminiProxy(imagePrompt);
     console.log(`Successfully generated image for page ${pageOutline.pageNumber}`);
     return imageDataUrl;
   } catch (error) {
