@@ -14,6 +14,69 @@ function getGenAI(): GoogleGenerativeAI {
   return _genAI;
 }
 
+// RunPod Stable Diffusion configuration
+const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
+const RUNPOD_SD_ENDPOINT = "tzf1j3sc3zufsy"; // Automatic1111 endpoint
+
+interface RunPodResponse {
+  id: string;
+  status: "IN_QUEUE" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
+  output?: {
+    images?: string[];
+    image?: string;
+  };
+  error?: string;
+}
+
+async function generateImageWithRunPod(prompt: string): Promise<string> {
+  if (!RUNPOD_API_KEY) {
+    throw new Error("RUNPOD_API_KEY environment variable is not set");
+  }
+
+  const runUrl = `https://api.runpod.ai/v2/${RUNPOD_SD_ENDPOINT}/runsync`;
+
+  // Call RunPod Automatic1111 endpoint
+  const response = await fetch(runUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${RUNPOD_API_KEY}`,
+    },
+    body: JSON.stringify({
+      input: {
+        prompt: prompt,
+        negative_prompt: "blurry, low quality, distorted text, watermark, signature",
+        width: 512,
+        height: 768, // Portrait orientation for zine pages
+        num_inference_steps: 25,
+        guidance_scale: 7.5,
+        sampler_name: "DPM++ 2M Karras",
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("RunPod API error:", response.status, errorText);
+    throw new Error(`RunPod API error: ${response.status}`);
+  }
+
+  const result: RunPodResponse = await response.json();
+
+  if (result.status === "FAILED") {
+    throw new Error(`RunPod job failed: ${result.error || "Unknown error"}`);
+  }
+
+  // Extract base64 image from response
+  const imageData = result.output?.images?.[0] || result.output?.image;
+  if (!imageData) {
+    throw new Error("No image data in RunPod response");
+  }
+
+  // RunPod returns base64 without prefix
+  return `data:image/png;base64,${imageData}`;
+}
+
 export interface PageOutline {
   pageNumber: number;
   type: string;
@@ -128,55 +191,28 @@ export async function generatePageImage(
   tone: string,
   feedback?: string
 ): Promise<string> {
-  // Use Nano Banana Pro for highest quality image generation
-  // Model: gemini-2.0-flash-exp-image-generation (supports native image output)
-  const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.0-flash-exp-image-generation",
-    generationConfig: {
-      // @ts-expect-error - responseModalities is valid but not in types yet
-      responseModalities: ["IMAGE"],
-    },
-  });
-
+  // Use RunPod Stable Diffusion for image generation
+  // (Gemini image gen is geo-blocked in Germany where the server is located)
   const styleDesc = STYLE_PROMPTS[style] || STYLE_PROMPTS["mycelial"];
   const toneDesc = TONE_PROMPTS[tone] || TONE_PROMPTS["regenerative"];
 
-  let imagePrompt = `Create a single page for a mini-zine (approximately 825x1275 pixels aspect ratio, portrait orientation).
-
-Page ${pageOutline.pageNumber}: ${pageOutline.title}
-Type: ${pageOutline.type}
-Key elements: ${pageOutline.keyPoints.join(", ")}
-
-Visual style: ${styleDesc}
-Mood/tone: ${toneDesc}
-
-Specific requirements:
-${pageOutline.imagePrompt}
-
-The image should be a complete, self-contained page that could be printed. Include any text as part of the design in a ${style} typography style.`;
+  // Build a Stable Diffusion optimized prompt
+  let imagePrompt = `${pageOutline.title}, ${pageOutline.keyPoints.join(", ")}, ${styleDesc}, ${toneDesc}, ${pageOutline.imagePrompt}, zine page design, printable art, high quality illustration`;
 
   if (feedback) {
-    imagePrompt += `\n\nUser feedback for refinement: ${feedback}`;
+    imagePrompt += `, ${feedback}`;
+  }
+
+  // Truncate prompt if too long (SD has token limits)
+  if (imagePrompt.length > 500) {
+    imagePrompt = imagePrompt.substring(0, 500);
   }
 
   try {
-    const result = await model.generateContent(imagePrompt);
-    const response = result.response;
-
-    // Extract image from response parts
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        // @ts-expect-error - inlineData exists on image responses
-        if (part.inlineData) {
-          // @ts-expect-error - inlineData has data and mimeType
-          const { data, mimeType } = part.inlineData;
-          return `data:${mimeType || "image/png"};base64,${data}`;
-        }
-      }
-    }
-
-    // If no image in response, throw error
-    throw new Error("No image data in response");
+    console.log(`Generating image for page ${pageOutline.pageNumber} with RunPod...`);
+    const imageDataUrl = await generateImageWithRunPod(imagePrompt);
+    console.log(`Successfully generated image for page ${pageOutline.pageNumber}`);
+    return imageDataUrl;
   } catch (error) {
     console.error("Image generation error:", error);
     throw new Error(`Failed to generate page image: ${error instanceof Error ? error.message : "Unknown error"}`);

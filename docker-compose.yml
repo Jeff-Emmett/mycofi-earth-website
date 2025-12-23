@@ -11,6 +11,7 @@ services:
       - HOSTNAME=0.0.0.0
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - RUNPOD_API_KEY=${RUNPOD_API_KEY}
     volumes:
       - zine-data:/app/data
     networks:
