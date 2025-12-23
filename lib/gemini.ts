@@ -85,8 +85,10 @@ Make each imagePrompt detailed and specific to the ${style} visual style. Includ
   const result = await model.generateContent(prompt);
   const response = result.response.text();
 
-  // Parse JSON from response (handle potential markdown code blocks)
+  // Parse JSON from response with robust cleaning
   let jsonStr = response;
+
+  // Remove markdown code blocks if present
   if (response.includes("```")) {
     const match = response.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (match) {
@@ -94,8 +96,30 @@ Make each imagePrompt detailed and specific to the ${style} visual style. Includ
     }
   }
 
-  const parsed = JSON.parse(jsonStr.trim());
-  return parsed.pages;
+  // Try to extract JSON object if there's extra content
+  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[0];
+  }
+
+  // Clean common JSON issues
+  jsonStr = jsonStr
+    .trim()
+    // Remove trailing commas before } or ]
+    .replace(/,\s*([\}\]])/g, '$1')
+    // Fix unescaped newlines in strings (replace with space)
+    .replace(/([^\\])\\n/g, '$1 ')
+    // Remove control characters
+    .replace(/[\x00-\x1F\x7F]/g, ' ');
+
+  try {
+    const parsed = JSON.parse(jsonStr);
+    return parsed.pages;
+  } catch (parseError) {
+    console.error("JSON parse error:", parseError);
+    console.error("Raw response:", response.substring(0, 500));
+    throw new Error("Failed to parse outline from AI response");
+  }
 }
 
 export async function generatePageImage(
