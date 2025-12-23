@@ -130,6 +130,7 @@ async function generateImageWithGemini(
 }
 
 // Gemini image generation via RunPod US proxy (bypasses geo-restrictions)
+// Uses gemini-2.0-flash-exp-image-generation for best quality with text rendering
 async function generateWithRunPodGeminiProxy(
   prompt: string,
   apiKey: string,
@@ -138,7 +139,16 @@ async function generateWithRunPodGeminiProxy(
 ): Promise<string | null> {
   const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
 
-  console.log("Calling Gemini via RunPod proxy...");
+  // Enhanced prompt for better text rendering
+  const enhancedPrompt = `${prompt}
+
+CRITICAL TEXT RENDERING INSTRUCTIONS:
+- Any text in the image must be spelled correctly and legibly
+- Use clean, readable typography appropriate to the style
+- Avoid distorted or warped letters
+- Text should be integrated naturally into the design`;
+
+  console.log("Calling Gemini (gemini-2.0-flash-exp-image-generation) via RunPod proxy...");
 
   const response = await fetch(runpodUrl, {
     method: "POST",
@@ -149,18 +159,18 @@ async function generateWithRunPodGeminiProxy(
     body: JSON.stringify({
       input: {
         api_key: apiKey,
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.0-flash-exp-image-generation",
         contents: [
           {
             parts: [
               {
-                text: `Generate an image: ${prompt}`,
+                text: enhancedPrompt,
               },
             ],
           },
         ],
         generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
+          responseModalities: ["IMAGE"],
         },
       },
     }),
