@@ -104,8 +104,15 @@ export async function generatePageImage(
   tone: string,
   feedback?: string
 ): Promise<string> {
-  // Use Gemini's image generation (Imagen 3 via Gemini API)
-  const model = getGenAI().getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  // Use Nano Banana Pro for highest quality image generation
+  // Model: gemini-2.0-flash-exp-image-generation (supports native image output)
+  const model = getGenAI().getGenerativeModel({
+    model: "gemini-2.0-flash-exp-image-generation",
+    generationConfig: {
+      // @ts-expect-error - responseModalities is valid but not in types yet
+      responseModalities: ["IMAGE"],
+    },
+  });
 
   const styleDesc = STYLE_PROMPTS[style] || STYLE_PROMPTS["mycelial"];
   const toneDesc = TONE_PROMPTS[tone] || TONE_PROMPTS["regenerative"];
@@ -128,30 +135,27 @@ The image should be a complete, self-contained page that could be printed. Inclu
     imagePrompt += `\n\nUser feedback for refinement: ${feedback}`;
   }
 
-  // For now, return a placeholder - we'll integrate actual image generation
-  // The actual implementation will use either Gemini's native image gen or RunPod
-
-  // Generate with Gemini 2.0 Flash which supports image generation
   try {
-    const result = await model.generateContent({
-      contents: [{
-        role: "user",
-        parts: [{ text: `Generate an image: ${imagePrompt}` }]
-      }],
-      generationConfig: {
-        // Note: Image generation config would go here when available
-      }
-    });
-
-    // Check if response contains image data
+    const result = await model.generateContent(imagePrompt);
     const response = result.response;
 
-    // For text model fallback, return a description
-    // In production, this would use imagen or other image gen API
-    return `data:text/plain;base64,${Buffer.from(response.text()).toString('base64')}`;
+    // Extract image from response parts
+    for (const candidate of response.candidates || []) {
+      for (const part of candidate.content?.parts || []) {
+        // @ts-expect-error - inlineData exists on image responses
+        if (part.inlineData) {
+          // @ts-expect-error - inlineData has data and mimeType
+          const { data, mimeType } = part.inlineData;
+          return `data:${mimeType || "image/png"};base64,${data}`;
+        }
+      }
+    }
+
+    // If no image in response, throw error
+    throw new Error("No image data in response");
   } catch (error) {
     console.error("Image generation error:", error);
-    throw new Error("Failed to generate page image");
+    throw new Error(`Failed to generate page image: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
