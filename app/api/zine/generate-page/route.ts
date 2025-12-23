@@ -102,20 +102,26 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const runpodApiKey = process.env.RUNPOD_API_KEY;
+  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  // Try Gemini 2.5 Flash Image (Nano Banana) - the correct image generation model
+  if (!runpodApiKey) {
+    throw new Error("RUNPOD_API_KEY not configured - required for Gemini proxy in Germany");
+  }
+
+  // Use RunPod US proxy to call Gemini (bypasses geo-restriction in Germany)
   try {
-    const result = await generateWithGeminiNanoBanana(prompt, apiKey);
+    const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
     if (result) {
-      console.log("✅ Generated image with Gemini 2.5 Flash Image (Nano Banana)");
+      console.log("✅ Generated image with Nano Banana via RunPod proxy");
       return result;
     }
   } catch (error) {
-    console.error("Gemini Nano Banana error:", error);
+    console.error("RunPod Gemini proxy error:", error);
   }
 
   // Final fallback: Create styled placeholder
@@ -123,39 +129,50 @@ async function generateImageWithGemini(
   return createStyledPlaceholder(outline, style);
 }
 
-// Gemini 2.5 Flash Image (Nano Banana) - Google's image generation model
-async function generateWithGeminiNanoBanana(prompt: string, apiKey: string): Promise<string | null> {
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`;
+// Nano Banana via RunPod US proxy (bypasses geo-restrictions in Germany)
+async function generateWithRunPodGeminiProxy(
+  prompt: string,
+  apiKey: string,
+  runpodApiKey: string,
+  endpointId: string
+): Promise<string | null> {
+  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
 
-  console.log("Calling Gemini 2.0 Flash Image Generation API...");
+  console.log("Calling Nano Banana (gemini-2.0-flash-exp-image-generation) via RunPod US proxy...");
 
-  const response = await fetch(apiUrl, {
+  const response = await fetch(runpodUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${runpodApiKey}`,
+    },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { text: prompt }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseModalities: ["IMAGE", "TEXT"],
-      }
+      input: {
+        api_key: apiKey,
+        model: "gemini-2.0-flash-exp-image-generation",
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"],
+        },
+      },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini Image API error:", response.status, errorText);
+    console.error("RunPod API error:", response.status, errorText);
     return null;
   }
 
-  const data = await response.json();
+  const result = await response.json();
+  const data = result.output || result;
 
   if (data.error) {
-    console.error("Gemini Image error:", JSON.stringify(data.error));
+    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
     return null;
   }
 
@@ -163,7 +180,7 @@ async function generateWithGeminiNanoBanana(prompt: string, apiKey: string): Pro
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
-      console.log("✅ Successfully received image from Gemini Image API");
+      console.log("✅ Successfully received image from Nano Banana via RunPod");
       return part.inlineData.data;
     }
   }
