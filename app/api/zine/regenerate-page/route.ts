@@ -156,7 +156,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
   }
 }
 
-// FLUX img2img via Fal.ai
+// FLUX img2img via Fal.ai - using synchronous endpoint
 async function generateWithFluxImg2Img(
   imageBase64: string,
   prompt: string,
@@ -167,10 +167,10 @@ async function generateWithFluxImg2Img(
     throw new Error("FAL_KEY not configured");
   }
 
-  console.log("Calling Fal.ai FLUX img2img API...");
+  console.log(`Calling Fal.ai FLUX img2img API (strength: ${strength})...`);
 
-  // Submit the request
-  const submitResponse = await fetch("https://queue.fal.run/fal-ai/flux/dev/image-to-image", {
+  // Use fal.run for synchronous execution (waits for result)
+  const response = await fetch("https://fal.run/fal-ai/flux/dev/image-to-image", {
     method: "POST",
     headers: {
       "Authorization": `Key ${falKey}`,
@@ -190,65 +190,23 @@ async function generateWithFluxImg2Img(
     }),
   });
 
-  if (!submitResponse.ok) {
-    const errorText = await submitResponse.text();
-    console.error("Fal.ai submit error:", submitResponse.status, errorText);
-    throw new Error(`Fal.ai API error: ${submitResponse.status}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Fal.ai error:", response.status, errorText);
+    throw new Error(`Fal.ai API error: ${response.status} - ${errorText}`);
   }
 
-  const result = await submitResponse.json();
+  const result = await response.json();
+  console.log("Fal.ai response received, extracting image...");
 
-  // Check if we got a direct result or need to poll
   if (result.images && result.images.length > 0) {
-    // Direct result
     const imageUrl = result.images[0].url;
+    console.log("✅ Got image URL from Fal.ai, downloading...");
     return await fetchImageAsBase64(imageUrl);
-  } else if (result.request_id) {
-    // Need to poll for result
-    return await pollForResult(result.request_id, falKey);
   }
 
+  console.error("Fal.ai response:", JSON.stringify(result).slice(0, 500));
   throw new Error("No image in Fal.ai response");
-}
-
-async function pollForResult(requestId: string, falKey: string): Promise<string> {
-  const maxAttempts = 60;
-  const pollInterval = 2000;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
-
-    const statusResponse = await fetch(`https://queue.fal.run/fal-ai/flux/dev/image-to-image/requests/${requestId}/status`, {
-      headers: {
-        "Authorization": `Key ${falKey}`,
-      },
-    });
-
-    if (!statusResponse.ok) continue;
-
-    const status = await statusResponse.json();
-
-    if (status.status === "COMPLETED") {
-      // Get the result
-      const resultResponse = await fetch(`https://queue.fal.run/fal-ai/flux/dev/image-to-image/requests/${requestId}`, {
-        headers: {
-          "Authorization": `Key ${falKey}`,
-        },
-      });
-
-      if (resultResponse.ok) {
-        const result = await resultResponse.json();
-        if (result.images && result.images.length > 0) {
-          const imageUrl = result.images[0].url;
-          return await fetchImageAsBase64(imageUrl);
-        }
-      }
-    } else if (status.status === "FAILED") {
-      throw new Error("Fal.ai generation failed");
-    }
-  }
-
-  throw new Error("Fal.ai generation timed out");
 }
 
 async function fetchImageAsBase64(url: string): Promise<string> {
