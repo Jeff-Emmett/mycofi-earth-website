@@ -182,7 +182,7 @@ export default function TextSelectionCanvas({
   };
 
   // Generate mask and complete selection
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (!currentRect || currentRect.width < 20 || currentRect.height < 20) {
       return;
     }
@@ -222,9 +222,25 @@ export default function TextSelectionCanvas({
       bounds: scaledRect,
       maskBase64,
     });
-  };
+  }, [currentRect, canvasSize, onSelectionComplete]);
 
   const hasValidSelection = currentRect && currentRect.width >= 20 && currentRect.height >= 20;
+
+  // Handle keyboard events (Enter to confirm, Escape to cancel)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && hasValidSelection) {
+        e.preventDefault();
+        handleConfirm();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasValidSelection, handleConfirm, onCancel]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
@@ -284,13 +300,13 @@ export default function TextSelectionCanvas({
                 : "bg-gray-600 text-gray-400 border-gray-600 cursor-not-allowed"
             }`}
           >
-            {hasValidSelection ? "Confirm Selection" : "Draw a selection"}
+            {hasValidSelection ? "Edit This Area ↵" : "Draw a selection"}
           </button>
         </div>
 
         {/* Help text */}
         <p className="text-white/60 text-sm text-center mt-3 punk-text">
-          Click and drag to select the text region you want to change
+          Click and drag to select the text region • Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded">Enter</kbd> to confirm or <kbd className="px-1.5 py-0.5 bg-white/20 rounded">Esc</kbd> to cancel
         </p>
       </div>
     </div>
