@@ -14,7 +14,9 @@ import {
   RefreshCw,
   Copy,
   CheckCircle,
+  Type,
 } from "lucide-react";
+import TextSelectionCanvas from "@/components/zine/TextSelectionCanvas";
 
 // Helper to get correct path based on subdomain
 function useZinePath() {
@@ -71,6 +73,12 @@ export default function CreatePage() {
   const [isListening, setIsListening] = useState(false);
   const [copied, setCopied] = useState(false);
   const [regenerateMode, setRegenerateMode] = useState<"refine" | "revise" | "regenerate">("revise");
+  const [isTextEditMode, setIsTextEditMode] = useState(false);
+  const [textEditSelection, setTextEditSelection] = useState<{
+    bounds: { x: number; y: number; width: number; height: number };
+    maskBase64: string;
+  } | null>(null);
+  const [newTextInput, setNewTextInput] = useState("");
 
   // Initialize from session storage
   useEffect(() => {
@@ -208,6 +216,48 @@ export default function CreatePage() {
       setFeedback("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to regenerate");
+      setState((s) => (s ? { ...s, generatingPage: null } : s));
+    }
+  };
+
+  const handleInpaintText = async () => {
+    if (!state || !textEditSelection || !newTextInput.trim()) return;
+
+    setState((s) => (s ? { ...s, generatingPage: currentPage } : s));
+
+    try {
+      const response = await fetch("/api/zine/inpaint-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zineId: state.id,
+          pageNumber: currentPage,
+          maskBase64: textEditSelection.maskBase64,
+          newText: newTextInput.trim(),
+          style: state.style,
+          tone: state.tone,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update text");
+      }
+
+      const data = await response.json();
+
+      setState((s) => {
+        if (!s) return s;
+        const newPages = [...s.pages];
+        newPages[currentPage - 1] = data.imageUrl;
+        return { ...s, pages: newPages, generatingPage: null };
+      });
+
+      // Clear text edit state
+      setTextEditSelection(null);
+      setNewTextInput("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update text");
       setState((s) => (s ? { ...s, generatingPage: null } : s));
     }
   };
@@ -642,6 +692,67 @@ export default function CreatePage() {
                      regenerateMode === "revise" ? "Revise Page" : "Regenerate Page"}
                   </button>
                 </div>
+
+                {/* Text Edit Section */}
+                <div className="punk-border bg-white p-4">
+                  <label className="block text-sm font-bold punk-text mb-2">
+                    Edit Text Region
+                  </label>
+                  {textEditSelection ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-600 punk-text">
+                        Selection ready. Enter the new text below:
+                      </p>
+                      <input
+                        type="text"
+                        value={newTextInput}
+                        onChange={(e) => setNewTextInput(e.target.value)}
+                        placeholder="Enter new text..."
+                        className="w-full p-3 border-2 border-black punk-text text-sm"
+                        disabled={state.generatingPage !== null}
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleInpaintText}
+                          disabled={!newTextInput.trim() || state.generatingPage !== null}
+                          className="flex-1 py-2 bg-green-600 text-white punk-text flex items-center justify-center gap-2
+                                    hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {state.generatingPage ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Type className="w-4 h-4" />
+                          )}
+                          Apply Text
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTextEditSelection(null);
+                            setNewTextInput("");
+                          }}
+                          disabled={state.generatingPage !== null}
+                          className="px-4 py-2 punk-border bg-white text-black hover:bg-gray-100 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setIsTextEditMode(true)}
+                      disabled={state.generatingPage !== null}
+                      className="w-full py-2 bg-white text-black punk-text border-2 border-black
+                                flex items-center justify-center gap-2 hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      <Type className="w-4 h-4" />
+                      Select Text to Edit
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-500 mt-2 punk-text">
+                    Draw a box around any text to change it
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -669,6 +780,18 @@ export default function CreatePage() {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Text Selection Overlay */}
+            {isTextEditMode && (
+              <TextSelectionCanvas
+                imageUrl={state.pages[currentPage - 1]}
+                onSelectionComplete={(data) => {
+                  setTextEditSelection(data);
+                  setIsTextEditMode(false);
+                }}
+                onCancel={() => setIsTextEditMode(false)}
+              />
+            )}
           </div>
         )}
 
