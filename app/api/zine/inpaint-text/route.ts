@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getZine, saveZine, getPageImagePath, readFileAsBase64, savePageImage } from "@/lib/storage";
+import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +44,22 @@ export async function POST(request: NextRequest) {
 
     const existingImageBase64 = await readFileAsBase64(existingImagePath);
 
+    // Get image dimensions and resize mask to match
+    const imageBuffer = Buffer.from(existingImageBase64, "base64");
+    const imageMetadata = await sharp(imageBuffer).metadata();
+    const imageWidth = imageMetadata.width || 768;
+    const imageHeight = imageMetadata.height || 1024;
+    console.log(`Image dimensions: ${imageWidth}x${imageHeight}`);
+
+    // Resize mask to match image dimensions
+    const maskBuffer = Buffer.from(maskBase64, "base64");
+    const resizedMaskBuffer = await sharp(maskBuffer)
+      .resize(imageWidth, imageHeight, { fit: "fill" })
+      .png()
+      .toBuffer();
+    const resizedMaskBase64 = resizedMaskBuffer.toString("base64");
+    console.log(`Mask resized to match image: ${imageWidth}x${imageHeight}`);
+
     // Build the text inpainting prompt
     const textPrompt = buildTextPrompt(newText, style, tone);
     console.log(`Inpainting text on page ${pageNumber}: "${newText.slice(0, 50)}..."`);
@@ -50,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Call Fal.ai FLUX Pro Fill for inpainting
     const newImageBase64 = await inpaintWithFluxFill(
       existingImageBase64,
-      maskBase64,
+      resizedMaskBase64,
       textPrompt,
       falKey
     );
