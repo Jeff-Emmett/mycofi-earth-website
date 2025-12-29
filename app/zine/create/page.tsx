@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import TextSelectionCanvas from "@/components/zine/TextSelectionCanvas";
 
+const DRAFT_STORAGE_KEY = "zineDraft";
+
 // Helper to get correct path based on subdomain
 function useZinePath() {
   const [isSubdomain, setIsSubdomain] = useState(false);
@@ -283,6 +285,13 @@ export default function CreatePage() {
       }
 
       const data = await response.json();
+
+      // Clear the draft since zine is now complete
+      try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } catch {
+        // Ignore localStorage errors
+      }
 
       setState((s) =>
         s ? { ...s, printLayoutUrl: data.printLayoutUrl, currentStep: "download" } : s
@@ -858,6 +867,11 @@ export default function CreatePage() {
               <button
                 onClick={() => {
                   sessionStorage.removeItem("zineInput");
+                  try {
+                    localStorage.removeItem(DRAFT_STORAGE_KEY);
+                  } catch {
+                    // Ignore localStorage errors
+                  }
                   router.push(getPath("/zine"));
                 }}
                 className="text-gray-600 hover:text-black punk-text underline"

@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mic, MicOff, Sparkles, BookOpen, Printer, ArrowLeft } from "lucide-react";
+import { Mic, MicOff, Sparkles, BookOpen, Printer, ArrowLeft, RotateCcw, X } from "lucide-react";
+
+const DRAFT_STORAGE_KEY = "zineDraft";
 
 // Helper to get correct path based on subdomain
 function useZinePath() {
@@ -38,6 +40,13 @@ const TONES = [
   { value: "poetic", label: "Poetic", description: "Lyrical, metaphorical" },
 ];
 
+interface ZineDraft {
+  topic: string;
+  style: string;
+  tone: string;
+  savedAt: string;
+}
+
 export default function ZinePage() {
   const router = useRouter();
   const getPath = useZinePath();
@@ -46,6 +55,61 @@ export default function ZinePage() {
   const [tone, setTone] = useState("regenerative");
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [savedDraft, setSavedDraft] = useState<ZineDraft | null>(null);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+
+  // Load saved draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const draft: ZineDraft = JSON.parse(saved);
+        // Only show draft if it has a topic
+        if (draft.topic?.trim()) {
+          setSavedDraft(draft);
+          setShowDraftBanner(true);
+        }
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, []);
+
+  // Auto-save draft when form changes
+  useEffect(() => {
+    if (topic.trim()) {
+      const draft: ZineDraft = {
+        topic,
+        style,
+        tone,
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }, [topic, style, tone]);
+
+  const restoreDraft = () => {
+    if (savedDraft) {
+      setTopic(savedDraft.topic);
+      setStyle(savedDraft.style);
+      setTone(savedDraft.tone);
+      setShowDraftBanner(false);
+    }
+  };
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Ignore localStorage errors
+    }
+    setSavedDraft(null);
+    setShowDraftBanner(false);
+  };
 
   const handleVoiceInput = () => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
@@ -124,6 +188,42 @@ export default function ZinePage() {
           <span>Print Ready</span>
         </div>
       </div>
+
+      {/* Saved Draft Banner */}
+      {showDraftBanner && savedDraft && (
+        <div className="w-full max-w-2xl mb-6 punk-border bg-green-50 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <RotateCcw className="w-4 h-4 text-green-600" />
+                <span className="font-bold punk-text text-sm">Saved Draft Found</span>
+              </div>
+              <p className="text-sm text-gray-600 truncate">
+                &ldquo;{savedDraft.topic.length > 60 ? savedDraft.topic.slice(0, 60) + "..." : savedDraft.topic}&rdquo;
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                Saved {new Date(savedDraft.savedAt).toLocaleDateString()} at{" "}
+                {new Date(savedDraft.savedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={restoreDraft}
+                className="px-3 py-1.5 bg-green-600 text-white text-sm punk-text hover:bg-green-700 transition-colors"
+              >
+                Restore
+              </button>
+              <button
+                onClick={clearDraft}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Discard draft"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Form */}
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6">
