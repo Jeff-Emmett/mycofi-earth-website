@@ -102,26 +102,29 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const runpodApiKey = process.env.RUNPOD_API_KEY;
-  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
   }
 
-  if (!runpodApiKey) {
-    throw new Error("RUNPOD_API_KEY not configured - required for Gemini proxy in Germany");
-  }
+  // Enhanced prompt for better text rendering and image quality
+  const enhancedPrompt = `${prompt}
 
-  // Use RunPod US proxy to call Gemini (bypasses geo-restriction in Germany)
+CRITICAL TEXT RENDERING INSTRUCTIONS:
+- Any text in the image must be spelled correctly and legibly
+- Use clean, readable typography appropriate to the style
+- Avoid distorted or warped letters
+- Text should be integrated naturally into the design`;
+
+  // Try Nano Banana Pro (gemini-2.0-flash-exp-image-generation) directly
   try {
-    const result = await generateWithRunPodGeminiProxy(prompt, apiKey, runpodApiKey, runpodEndpointId);
+    const result = await generateWithNanoBananaPro(enhancedPrompt, apiKey);
     if (result) {
-      console.log("✅ Generated image with Nano Banana via RunPod proxy");
+      console.log("✅ Generated image with Nano Banana Pro");
       return result;
     }
   } catch (error) {
-    console.error("RunPod Gemini proxy error:", error);
+    console.error("Nano Banana Pro error:", error);
   }
 
   // Final fallback: Create styled placeholder
@@ -129,50 +132,42 @@ async function generateImageWithGemini(
   return createStyledPlaceholder(outline, style);
 }
 
-// Nano Banana via RunPod US proxy (bypasses geo-restrictions in Germany)
-async function generateWithRunPodGeminiProxy(
+// Nano Banana Pro - Direct Gemini API call
+async function generateWithNanoBananaPro(
   prompt: string,
-  apiKey: string,
-  runpodApiKey: string,
-  endpointId: string
+  apiKey: string
 ): Promise<string | null> {
-  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`;
 
-  console.log("Calling Nano Banana (gemini-2.0-flash-exp-image-generation) via RunPod US proxy...");
+  console.log("Calling Nano Banana Pro (gemini-2.0-flash-exp-image-generation)...");
 
-  const response = await fetch(runpodUrl, {
+  const response = await fetch(geminiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${runpodApiKey}`,
     },
     body: JSON.stringify({
-      input: {
-        api_key: apiKey,
-        model: "gemini-2.0-flash-exp-image-generation",
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
+      contents: [
+        {
+          parts: [{ text: prompt }],
         },
+      ],
+      generationConfig: {
+        responseModalities: ["IMAGE"],
       },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("RunPod API error:", response.status, errorText);
+    console.error("Gemini API error:", response.status, errorText);
     return null;
   }
 
-  const result = await response.json();
-  const data = result.output || result;
+  const data = await response.json();
 
   if (data.error) {
-    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
+    console.error("Gemini API error:", JSON.stringify(data.error));
     return null;
   }
 
@@ -180,7 +175,7 @@ async function generateWithRunPodGeminiProxy(
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
-      console.log("✅ Successfully received image from Nano Banana via RunPod");
+      console.log("✅ Successfully received image from Nano Banana Pro");
       return part.inlineData.data;
     }
   }
