@@ -102,9 +102,15 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const runpodApiKey = process.env.RUNPOD_API_KEY;
+  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
+  }
+
+  if (!runpodApiKey) {
+    throw new Error("RUNPOD_API_KEY not configured - required for US proxy");
   }
 
   // Enhanced prompt for better text rendering and image quality
@@ -116,15 +122,15 @@ CRITICAL TEXT RENDERING INSTRUCTIONS:
 - Avoid distorted or warped letters
 - Text should be integrated naturally into the design`;
 
-  // Try Nano Banana Pro (gemini-2.0-flash-exp-image-generation) directly
+  // Use RunPod US proxy to call Nano Banana Pro (bypasses geo-blocking)
   try {
-    const result = await generateWithNanoBananaPro(enhancedPrompt, apiKey);
+    const result = await generateWithNanoBananaProViaRunPod(enhancedPrompt, apiKey, runpodApiKey, runpodEndpointId);
     if (result) {
-      console.log("✅ Generated image with Nano Banana Pro");
+      console.log("✅ Generated image with Nano Banana Pro via RunPod US");
       return result;
     }
   } catch (error) {
-    console.error("Nano Banana Pro error:", error);
+    console.error("Nano Banana Pro via RunPod error:", error);
   }
 
   // Final fallback: Create styled placeholder
@@ -132,42 +138,50 @@ CRITICAL TEXT RENDERING INSTRUCTIONS:
   return createStyledPlaceholder(outline, style);
 }
 
-// Nano Banana Pro - Direct Gemini API call
-async function generateWithNanoBananaPro(
+// Nano Banana Pro via RunPod US proxy (bypasses geo-blocking in Germany)
+async function generateWithNanoBananaProViaRunPod(
   prompt: string,
-  apiKey: string
+  apiKey: string,
+  runpodApiKey: string,
+  endpointId: string
 ): Promise<string | null> {
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`;
+  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
 
-  console.log("Calling Nano Banana Pro (gemini-2.0-flash-exp-image-generation)...");
+  console.log("Calling Nano Banana Pro via RunPod US proxy...");
 
-  const response = await fetch(geminiUrl, {
+  const response = await fetch(runpodUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `Bearer ${runpodApiKey}`,
     },
     body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }],
+      input: {
+        api_key: apiKey,
+        model: "gemini-2.0-flash-exp-image-generation",
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE"],
         },
-      ],
-      generationConfig: {
-        responseModalities: ["IMAGE"],
       },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini API error:", response.status, errorText);
+    console.error("RunPod API error:", response.status, errorText);
     return null;
   }
 
-  const data = await response.json();
+  const result = await response.json();
+  const data = result.output || result;
 
   if (data.error) {
-    console.error("Gemini API error:", JSON.stringify(data.error));
+    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
     return null;
   }
 
