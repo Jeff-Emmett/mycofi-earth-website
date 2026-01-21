@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getZine, saveZine, savePageImage } from "@/lib/storage";
 import type { PageOutline } from "@/lib/gemini";
 
+// Zine page dimensions: 1/8 of US Letter (8.5" x 11") at 300 DPI
+// Page size: 2.75" x 4.25", with 0.125" margin on each side
+// Content area: 2.5" x 4.0"
+const ZINE_PAGE_WIDTH = 750;   // 2.5 inches * 300 DPI (2.75" - 0.25" margins)
+const ZINE_PAGE_HEIGHT = 1200; // 4.0 inches * 300 DPI (4.25" - 0.25" margins)
+
 // Style-specific image generation prompts
 const STYLE_PROMPTS: Record<string, string> = {
   "punk-zine": "xerox-style high contrast black and white, DIY cut-and-paste collage aesthetic, hand-drawn typography, punk rock zine style, grainy texture, photocopied look, bold graphic elements",
@@ -74,7 +80,10 @@ export async function POST(request: NextRequest) {
 }
 
 function buildImagePrompt(outline: PageOutline, stylePrompt: string, tonePrompt: string): string {
-  return `Create a single zine page image (portrait orientation, 825x1275 pixels aspect ratio).
+  return `Create a single zine page image for print.
+
+EXACT DIMENSIONS: ${ZINE_PAGE_WIDTH}x${ZINE_PAGE_HEIGHT} pixels (portrait orientation, 2.5" x 4.0" at 300 DPI)
+This is 1/8 of a US Letter page with 0.125" margins for an 8-page mini-zine fold.
 
 PAGE ${outline.pageNumber}: "${outline.title}"
 Type: ${outline.type}
@@ -88,12 +97,12 @@ Mood/Tone: ${tonePrompt}
 Detailed requirements:
 ${outline.imagePrompt}
 
-IMPORTANT:
-- This is a SINGLE page that will be printed
-- Include any text/typography as part of the graphic design
+CRITICAL REQUIREMENTS:
+- Portrait orientation ONLY (taller than wide)
 - Fill the entire page - no blank margins
-- Make it visually striking and cohesive
-- The design should work in print (high contrast, clear details)`;
+- Design must work at small print size (high contrast, clear details)
+- Include any text/typography as part of the graphic design
+- Make it visually striking and cohesive`;
 }
 
 async function generateImageWithGemini(
@@ -102,15 +111,9 @@ async function generateImageWithGemini(
   style: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const runpodApiKey = process.env.RUNPOD_API_KEY;
-  const runpodEndpointId = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
 
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY not configured");
-  }
-
-  if (!runpodApiKey) {
-    throw new Error("RUNPOD_API_KEY not configured - required for US proxy");
   }
 
   // Enhanced prompt for better text rendering and image quality
@@ -122,15 +125,17 @@ CRITICAL TEXT RENDERING INSTRUCTIONS:
 - Avoid distorted or warped letters
 - Text should be integrated naturally into the design`;
 
-  // Use RunPod US proxy to call Nano Banana Pro (bypasses geo-blocking)
+  // Call Nano Banana (Gemini 2.5 Flash Image) directly - no geo-blocking from EU
   try {
-    const result = await generateWithNanoBananaProViaRunPod(enhancedPrompt, apiKey, runpodApiKey, runpodEndpointId);
+    const result = await generateWithNanoBanana(enhancedPrompt, apiKey);
     if (result) {
-      console.log("✅ Generated image with Nano Banana Pro via RunPod US");
-      return result;
+      console.log("✅ Generated image with Nano Banana (gemini-2.5-flash-image)");
+      // Resize to exact zine dimensions
+      const resizedImage = await resizeToZineDimensions(result);
+      return resizedImage;
     }
   } catch (error) {
-    console.error("Nano Banana Pro via RunPod error:", error);
+    console.error("Nano Banana error:", error);
   }
 
   // Final fallback: Create styled placeholder
@@ -138,50 +143,62 @@ CRITICAL TEXT RENDERING INSTRUCTIONS:
   return createStyledPlaceholder(outline, style);
 }
 
-// Nano Banana Pro via RunPod US proxy (bypasses geo-blocking in Germany)
-async function generateWithNanoBananaProViaRunPod(
+// Resize image to exact zine page dimensions (1/8 letter)
+async function resizeToZineDimensions(base64Image: string): Promise<string> {
+  const sharp = (await import("sharp")).default;
+
+  const inputBuffer = Buffer.from(base64Image, "base64");
+
+  // Resize to exact dimensions, covering the area and cropping excess
+  const resizedBuffer = await sharp(inputBuffer)
+    .resize(ZINE_PAGE_WIDTH, ZINE_PAGE_HEIGHT, {
+      fit: "cover",      // Cover the dimensions, crop if needed
+      position: "center" // Center the crop
+    })
+    .png()
+    .toBuffer();
+
+  console.log(`✅ Resized image to ${ZINE_PAGE_WIDTH}x${ZINE_PAGE_HEIGHT}px`);
+  return resizedBuffer.toString("base64");
+}
+
+// Direct Nano Banana API call (Gemini 2.5 Flash Image)
+async function generateWithNanoBanana(
   prompt: string,
-  apiKey: string,
-  runpodApiKey: string,
-  endpointId: string
+  apiKey: string
 ): Promise<string | null> {
-  const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
+  const model = "gemini-2.5-flash-image";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  console.log("Calling Nano Banana Pro via RunPod US proxy...");
+  console.log("Calling Nano Banana (gemini-2.5-flash-image)...");
 
-  const response = await fetch(runpodUrl, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${runpodApiKey}`,
     },
     body: JSON.stringify({
-      input: {
-        api_key: apiKey,
-        model: "gemini-2.0-flash-exp-image-generation",
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["IMAGE"],
+      contents: [
+        {
+          parts: [{ text: prompt }],
         },
+      ],
+      generationConfig: {
+        responseModalities: ["image", "text"],
       },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("RunPod API error:", response.status, errorText);
+    console.error("Gemini API error:", response.status, errorText);
     return null;
   }
 
-  const result = await response.json();
-  const data = result.output || result;
+  const data = await response.json();
 
   if (data.error) {
-    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
+    console.error("Gemini API error:", JSON.stringify(data.error));
     return null;
   }
 
@@ -189,7 +206,7 @@ async function generateWithNanoBananaProViaRunPod(
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
-      console.log("✅ Successfully received image from Nano Banana Pro");
+      console.log("✅ Successfully received image from Nano Banana");
       return part.inlineData.data;
     }
   }
@@ -261,7 +278,7 @@ async function createStyledPlaceholder(
   const pageType = escapeXml(outline.type.toUpperCase());
 
   const svg = `
-    <svg width="825" height="1275" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${ZINE_PAGE_WIDTH}" height="${ZINE_PAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <defs>
         ${s.pattern}
         <style>

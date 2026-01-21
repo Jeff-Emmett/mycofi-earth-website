@@ -3,6 +3,12 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getZine, saveZine, getPageImagePath, readFileAsBase64, savePageImage } from "@/lib/storage";
 import type { PageOutline } from "@/lib/gemini";
 
+// Zine page dimensions: 1/8 of US Letter (8.5" x 11") at 300 DPI
+// Page size: 2.75" x 4.25", with 0.125" margin on each side
+// Content area: 2.5" x 4.0"
+const ZINE_PAGE_WIDTH = 750;   // 2.5 inches * 300 DPI (2.75" - 0.25" margins)
+const ZINE_PAGE_HEIGHT = 1200; // 4.0 inches * 300 DPI (4.25" - 0.25" margins)
+
 // Regeneration modes with denoising strengths
 const MODE_STRENGTHS: Record<string, number> = {
   refine: 0.25,   // Keep most of image, minor tweaks
@@ -183,8 +189,8 @@ async function generateWithFluxImg2Img(
       num_inference_steps: 28,
       guidance_scale: 3.5,
       image_size: {
-        width: 768,
-        height: 1024  // Portrait for zine pages
+        width: ZINE_PAGE_WIDTH,
+        height: ZINE_PAGE_HEIGHT  // 1/8 letter page (2.75" x 4.25" at 300 DPI)
       },
       output_format: "png"
     }),
