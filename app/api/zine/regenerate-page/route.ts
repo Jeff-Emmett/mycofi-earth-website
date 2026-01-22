@@ -3,11 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getZine, saveZine, getPageImagePath, readFileAsBase64, savePageImage } from "@/lib/storage";
 import type { PageOutline } from "@/lib/gemini";
 
-// Zine page dimensions: 1/8 of US Letter (8.5" x 11") at 300 DPI
-// Page size: 2.75" x 4.25", with 0.125" margin on each side
-// Content area: 2.5" x 4.0"
-const ZINE_PAGE_WIDTH = 750;   // 2.5 inches * 300 DPI (2.75" - 0.25" margins)
-const ZINE_PAGE_HEIGHT = 1200; // 4.0 inches * 300 DPI (4.25" - 0.25" margins)
+// Zine page dimensions: 1/8 of US Letter at 300 DPI
+// Aspect ratio: 1.55 (height / width)
+const ZINE_PAGE_WIDTH = 750;
+const ZINE_PAGE_HEIGHT = 1163; // 750 * 1.55 = 1162.5 ≈ 1163
 
 // Regeneration modes with denoising strengths
 const MODE_STRENGTHS: Record<string, number> = {

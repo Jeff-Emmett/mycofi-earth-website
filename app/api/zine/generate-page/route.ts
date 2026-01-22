@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getZine, saveZine, savePageImage } from "@/lib/storage";
 import type { PageOutline } from "@/lib/gemini";
 
-// Zine page dimensions: 1/8 of US Letter (8.5" x 11") at 300 DPI
-// Page size: 2.75" x 4.25", with 0.125" margin on each side
-// Content area: 2.5" x 4.0"
-const ZINE_PAGE_WIDTH = 750;   // 2.5 inches * 300 DPI (2.75" - 0.25" margins)
-const ZINE_PAGE_HEIGHT = 1200; // 4.0 inches * 300 DPI (4.25" - 0.25" margins)
+// Zine page dimensions: 1/8 of US Letter at 300 DPI
+// Aspect ratio: 1.55 (height / width)
+const ZINE_PAGE_WIDTH = 750;
+const ZINE_PAGE_HEIGHT = 1163; // 750 * 1.55 = 1162.5 ≈ 1163
 
 // Style-specific image generation prompts
 const STYLE_PROMPTS: Record<string, string> = {
@@ -82,8 +81,8 @@ export async function POST(request: NextRequest) {
 function buildImagePrompt(outline: PageOutline, stylePrompt: string, tonePrompt: string): string {
   return `Create a single zine page image for print.
 
-EXACT DIMENSIONS: ${ZINE_PAGE_WIDTH}x${ZINE_PAGE_HEIGHT} pixels (portrait orientation, 2.5" x 4.0" at 300 DPI)
-This is 1/8 of a US Letter page with 0.125" margins for an 8-page mini-zine fold.
+EXACT DIMENSIONS: ${ZINE_PAGE_WIDTH}x${ZINE_PAGE_HEIGHT} pixels (portrait, 1.55 aspect ratio)
+This is 1/8 of a US Letter page for an 8-page mini-zine fold.
 
 PAGE ${outline.pageNumber}: "${outline.title}"
 Type: ${outline.type}
