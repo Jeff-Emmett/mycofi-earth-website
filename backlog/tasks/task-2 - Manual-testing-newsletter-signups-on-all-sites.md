@@ -22,7 +22,7 @@ Manually test the newsletter signup flow on all 8 websites to verify the user ex
 - [ ] #3 Test trippinballs.lol newsletter signup
 - [ ] #4 Test undernet.earth newsletter signup
 - [ ] #5 Test psilo-cyber.net/ics newsletter signup
-- [ ] #6 Test rspace.app newsletter signup
+- [ ] #6 Test rspace.online newsletter signup
 - [ ] #7 Test post-appitalism.app newsletter signup
 - [ ] #8 Test alltor.net newsletter signup
 - [ ] #9 Verify welcome email content matches expected messages
@@ -54,3 +54,29 @@ Manually test the newsletter signup flow on all 8 websites to verify the user ex
 
 ### API Testing Results (2025-12-23)
 All 8 newsletter APIs tested successfully via curl. Subscribers created and welcome emails triggered.
+
+### Infrastructure Updates (2026-02-03)
+
+**Issues Fixed:**
+- Listmonk's transactional email API was not sending emails despite returning success
+- Newsletter-api now sends welcome emails directly via Resend API (bypassing broken Listmonk tx)
+- Fixed endpoint URL from `/api/subscribe/subscribe` to `/subscribe` in all 8 frontend components
+- Fixed Traefik routing for newsletter-api
+
+**Docker/Deployment Fixes:**
+- Created missing docker-compose.yml for compost-capitalism, trippin, alltornet
+- Created Dockerfile and nginx.conf for compost-capitalism (static export)
+- Fixed Traefik port configuration (nginx uses 80, not 3000)
+- All 8 sites now running in Docker with webhook auto-deployment
+
+**All Sites Verified Accessible:**
+- mycofi.earth ✓
+- compostcapitalism.xyz ✓
+- trippinballs.lol ✓
+- undernet.earth ✓
+- psilo-cyber.net ✓
+- rspace.online ✓ (note: domain is .online not .app)
+- post-appitalism.app ✓
+- alltor.net ✓
+
+**Ready for manual testing** - all technical infrastructure verified working.
