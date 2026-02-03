@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Sprout } from "lucide-react"
 
-const NEWSLETTER_API = "https://newsletter.jeffemmett.com/api/subscribe"
+const NEWSLETTER_API = "https://newsletter.jeffemmett.com/subscribe"
 const LIST_UUID = "47c050ec-78b4-4f1b-b1d4-708664479685" // MycoFi list
 
 export function NewsletterSignup() {
@@ -21,7 +21,7 @@ export function NewsletterSignup() {
     setStatus("loading")
 
     try {
-      const response = await fetch(`${NEWSLETTER_API}/subscribe`, {
+      const response = await fetch(NEWSLETTER_API, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
