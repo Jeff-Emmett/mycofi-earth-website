@@ -66,6 +66,15 @@ export function Footer({ className }: FooterProps) {
                   Mycopunk Principles
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="https://nofi.lol"
+                  target="_blank"
+                  className="text-black !opacity-100 hover:text-primary transition-colors"
+                >
+                  NoFi — Do Less
+                </Link>
+              </li>
             </ul>
           </div>
 
