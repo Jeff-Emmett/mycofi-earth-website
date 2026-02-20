@@ -8,7 +8,7 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/mycofi-logo.jpg"
+            src="/mycofi-logo.png"
             alt="MycoFi Logo"
             width={40}
             height={40}

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     siteName: "MycoFi",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "MycoFi - Regenerative Economics",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "MycoFi - Mycoeconomics & Permaculture Currencies",
     description: "Exploring regenerative economic systems inspired by mycelial networks and nature's resource allocation algorithms",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.png"],
   },
 }
 
