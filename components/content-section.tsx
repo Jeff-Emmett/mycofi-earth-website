@@ -82,7 +82,7 @@ export function ContentSection() {
           <div className="flex justify-center mb-12">
             <Button asChild size="lg" className="bg-emerald-700 text-white !opacity-100 hover:bg-emerald-600">
               <a
-                href="https://mycofi.substack.com/p/from-monoculture-to-permaculture"
+                href="https://allthingsdecent.substack.com/p/mycoeconomics-and-permaculture-currencies"
                 target="_blank"
                 rel="noopener noreferrer"
               >
