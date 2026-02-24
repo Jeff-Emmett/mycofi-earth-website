@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { Crimson_Text } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
 
@@ -54,7 +53,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${crimsonText.variable}`}>
         <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        <Analytics />
       </body>
     </html>
   )
