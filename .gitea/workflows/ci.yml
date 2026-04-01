@@ -1,6 +1,4 @@
-# Gitea Actions CI/CD — Static Site (no tests, build + deploy only)
-# Copy to: <repo>/.gitea/workflows/ci.yml
-# Replace: mycofi-earth-website, /opt/websites/mycofi-earth-website, https://mycofi.earth/
+# Gitea Actions CI/CD — Static Site (build + deploy only)
 
 name: CI/CD
 
