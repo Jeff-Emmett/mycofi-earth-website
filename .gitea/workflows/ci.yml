@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 env:
-  REGISTRY: gitea.jeffemmett.com
-  IMAGE: gitea.jeffemmett.com/jeffemmett/mycofi-earth-website
+  REGISTRY: localhost:3000
+  IMAGE: localhost:3000/jeffemmett/mycofi-earth-website
 
 jobs:
   deploy:
