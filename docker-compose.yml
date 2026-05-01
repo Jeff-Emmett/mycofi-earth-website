@@ -3,7 +3,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: mycofi-earth-website:latest
+    # CI sets IMAGE_TAG to the short SHA after `docker push` to the local registry,
+    # so `docker compose up` actually picks up the new build. Falls back to :latest
+    # for local `docker compose up` without CI.
+    image: localhost:3000/jeffemmett/mycofi-earth-website:${IMAGE_TAG:-latest}
     container_name: mycofi-earth-website
     restart: unless-stopped
     read_only: true
