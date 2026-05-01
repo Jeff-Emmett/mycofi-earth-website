@@ -44,7 +44,7 @@ jobs:
             cat .last-deployed-tag 2>/dev/null > .rollback-tag || true
             echo '${{ env.IMAGE_TAG }}' > .last-deployed-tag
             docker pull ${{ env.IMAGE }}:${{ env.IMAGE_TAG }}
-            IMAGE_TAG=${{ env.IMAGE_TAG }} docker compose up -d --no-build
+            IMAGE_TAG=${{ env.IMAGE_TAG }} docker compose up -d --force-recreate --no-build
           "
 
       - name: Smoke test
