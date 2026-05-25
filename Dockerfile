@@ -20,7 +20,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
-RUN corepack enable pnpm && pnpm build
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate && pnpm build
 
 # Stage 3: Runner (production image)
 FROM node:20-alpine AS runner
