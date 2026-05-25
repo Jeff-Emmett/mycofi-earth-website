@@ -14,67 +14,45 @@ function getGenAI(): GoogleGenerativeAI {
   return _genAI;
 }
 
-// RunPod Gemini Proxy configuration (US-based to bypass geo-restrictions)
-const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
-const RUNPOD_GEMINI_ENDPOINT_ID = process.env.RUNPOD_GEMINI_ENDPOINT_ID || "ntqjz8cdsth42i";
+// Cloudflare Worker Gemini Proxy (US-edge to bypass EU geo-restriction).
+// The Worker holds its own GEMINI_API_KEY secret and forwards directly to
+// generativelanguage.googleapis.com. No GPU, no RunPod. ~$0 cost.
+const GEMINI_PROXY_URL =
+  process.env.GEMINI_PROXY_URL || "https://gemini-proxy.jeffemmett.workers.dev";
 
 /**
- * Generate image using Gemini API via RunPod US proxy
- * This bypasses the geo-restriction on Gemini image generation in Germany
+ * Generate image using Gemini API via Cloudflare Worker proxy.
+ * Same geo-bypass effect as the previous RunPod path, but free + serverless.
  */
 async function generateImageWithGeminiProxy(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const runpodApiKey = RUNPOD_API_KEY;
+  console.log("Calling Gemini via Cloudflare Worker proxy...");
 
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is not set");
-  }
-
-  if (!runpodApiKey) {
-    throw new Error("RUNPOD_API_KEY environment variable is not set");
-  }
-
-  const runpodUrl = `https://api.runpod.ai/v2/${RUNPOD_GEMINI_ENDPOINT_ID}/runsync`;
-
-  console.log("Calling Gemini via RunPod proxy...");
-
-  const response = await fetch(runpodUrl, {
+  const response = await fetch(GEMINI_PROXY_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${runpodApiKey}`,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      input: {
-        api_key: apiKey,
-        model: "gemini-2.0-flash-exp",
-        contents: [
-          {
-            parts: [
-              {
-                text: `Generate an image: ${prompt}`,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
+      model: "gemini-2.5-flash-image",
+      contents: [
+        {
+          parts: [{ text: `Generate an image: ${prompt}` }],
         },
+      ],
+      generationConfig: {
+        responseModalities: ["TEXT", "IMAGE"],
       },
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("RunPod API error:", response.status, errorText);
-    throw new Error(`RunPod API error: ${response.status}`);
+    console.error("Gemini Worker proxy error:", response.status, errorText);
+    throw new Error(`Gemini Worker proxy error: ${response.status}`);
   }
 
-  const result = await response.json();
-  const data = result.output || result;
+  const data = await response.json();
 
   if (data.error) {
-    console.error("Gemini API error via RunPod:", JSON.stringify(data.error));
+    console.error("Gemini API error via Worker:", JSON.stringify(data.error));
     throw new Error(data.error.message || "Gemini API error");
   }
 
@@ -82,7 +60,7 @@ async function generateImageWithGeminiProxy(prompt: string): Promise<string> {
   const parts = data.candidates?.[0]?.content?.parts || [];
   for (const part of parts) {
     if (part.inlineData?.mimeType?.startsWith("image/")) {
-      console.log("Successfully generated image via RunPod proxy");
+      console.log("Successfully generated image via Worker proxy");
       return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
   }
