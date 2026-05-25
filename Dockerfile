@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json pnpm-lock.yaml* ./
-RUN corepack prepare pnpm@10.15.1 --activate && pnpm i --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.15.1 --activate && pnpm i --frozen-lockfile
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
